@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const mountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
+if (!fs.existsSync(mountPath)) fs.mkdirSync(mountPath, { recursive: true });
 const dbPath = path.join(mountPath, 'safa.db');
 const db = new Database(dbPath);
 

@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 const mountPath = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
 const uploadsDir = path.join(mountPath, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 app.use('/uploads', express.static(uploadsDir));
 
