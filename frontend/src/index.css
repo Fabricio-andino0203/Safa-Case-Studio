@@ -87,12 +87,12 @@ body {
   background: rgba(8, 8, 8, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
 
-@utility glass-input:focus {
-  border-color: rgba(225, 29, 46, 0.5);
-  box-shadow: 0 0 0 2px rgba(225, 29, 46, 0.1);
-  outline: none;
+  &:focus {
+    border-color: rgba(225, 29, 46, 0.5);
+    box-shadow: 0 0 0 2px rgba(225, 29, 46, 0.1);
+    outline: none;
+  }
 }
 
 /* Text glow effects */
