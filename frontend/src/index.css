@@ -1,16 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
+  
+  --color-brand-black: #080808;
+  --color-brand-dark: #121212;
+  --color-brand-medium: #1C1C1C;
+  --color-brand-light: #2A2A2A;
+  --color-brand-red: #E11D2E;
+  --color-brand-red-hover: #C11524;
+  --color-brand-white: #F5F5F5;
+  
+  --animate-fade-in-up: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-pulse-glow: pulse-glow 2s infinite ease-in-out;
+  --animate-shimmer: shimmer 2s infinite linear;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.3;
+    filter: drop-shadow(0 0 4px rgba(225, 29, 46, 0.2));
+  }
+  50% {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 15px rgba(225, 29, 46, 0.6));
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 body {
-  @apply bg-zinc-950 text-zinc-50 antialiased;
+  @apply bg-brand-black text-zinc-100 antialiased selection:bg-brand-red selection:text-white;
   font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #080808;
+}
+::-webkit-scrollbar-thumb {
+  background: #1C1C1C;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #E11D2E;
+}
+
+/* Glassmorphism Classes */
 @utility glass {
-  background: rgb(24 24 27 / 0.5);
+  background: rgba(18, 18, 18, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+@utility glass-card {
+  background: rgba(28, 28, 28, 0.4);
   backdrop-filter: blur(12px);
-  border: 1px solid rgb(39 39 42);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@utility glass-input {
+  background: rgba(8, 8, 8, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility glass-input:focus {
+  border-color: rgba(225, 29, 46, 0.5);
+  box-shadow: 0 0 0 2px rgba(225, 29, 46, 0.1);
+  outline: none;
+}
+
+/* Text glow effects */
+@utility text-glow-red {
+  text-shadow: 0 0 10px rgba(225, 29, 46, 0.4);
+}
+
+/* Button glow effects */
+@utility btn-primary {
+  @apply bg-brand-red hover:bg-brand-red-hover text-white px-5 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg shadow-brand-red/10 hover:shadow-brand-red/30 hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 text-sm;
+}
+
+@utility btn-secondary {
+  @apply bg-brand-medium hover:bg-brand-light text-zinc-300 hover:text-white border border-white/5 px-5 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 text-sm;
 }

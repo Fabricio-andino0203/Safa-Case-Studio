@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Plus, Loader2, Trash2, ToggleLeft, ToggleRight, Image } from 'lucide-react';
+import { Upload, Plus, Loader2, Trash2, ToggleLeft, ToggleRight, Image, Sparkles, Smartphone, ArrowRight, X } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -55,155 +55,171 @@ export default function Modelos() {
     catch (err) { alert(err.response?.data?.error || 'Error'); }
   };
 
-  // Get unique brands from data
   const marcas = [...new Set(modelos.map(m => m.marca).filter(Boolean))];
   const filtered = filtroMarca === 'todos' ? modelos : modelos.filter(m => m.marca === filtroMarca);
 
   return (
-    <div className="p-8">
-      <header className="mb-6 flex items-center justify-between">
+    <div className="space-y-8">
+      {/* Page Header */}
+      <header className="flex items-center justify-between border-b border-white/5 pb-4">
         <div>
-          <h2 className="text-3xl font-bold">Modelos de Cobertores</h2>
-          <p className="text-zinc-400 text-sm">Administra el catálogo. Sube la lámina con fondo verde y el sistema procesará la máscara automáticamente.</p>
+          <div className="flex items-center gap-1.5 text-brand-red mb-1">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Configuración de Moldes</span>
+          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tight text-white leading-none">Modelos de Cobertores</h2>
+          <p className="text-zinc-500 text-xs mt-1">Sube la lámina verde y blanca, el motor gráfico la convertirá en una máscara de diseño interactiva.</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl font-semibold hover:bg-zinc-200 transition-colors text-sm">
-          <Plus className="w-4 h-4" /> Nuevo Modelo
+          className="btn-primary py-2.5 text-xs uppercase tracking-wider font-bold">
+          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          <span>{showForm ? 'Cerrar Panel' : 'Nuevo Modelo'}</span>
         </button>
       </header>
 
-      {/* Create Form */}
+      {/* Creation Modal / Form Panel */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="glass p-6 rounded-2xl border border-zinc-800 mb-8 animate-fade-in-up">
-          <h3 className="font-semibold text-lg mb-4">Agregar Modelo</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="glass p-6 md:p-8 rounded-[2rem] border border-white/5 relative shadow-2xl animate-fade-in-up">
+          <h3 className="font-extrabold text-white text-base uppercase tracking-tight mb-5 flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-brand-red" /> Añadir Nuevo Molde al Catálogo
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Marca</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Marca del Dispositivo</label>
               <select required value={formData.marca}
                 onChange={e => setFormData({ ...formData, marca: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors appearance-none">
-                <option value="">Seleccionar marca...</option>
-                {MARCAS.map(m => <option key={m} value={m}>{m}</option>)}
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white appearance-none cursor-pointer">
+                <option value="" className="bg-[#121212]">Seleccionar marca...</option>
+                {MARCAS.map(m => <option key={m} value={m} className="bg-[#121212]">{m}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Nombre del Modelo</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Nombre comercial</label>
               <input required type="text" value={formData.nombre}
                 onChange={e => setFormData({ ...formData, nombre: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
                 placeholder="Ej: iPhone 15 Pro Max" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Ancho Impresión (cm)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Ancho de Impresión (cm)</label>
               <input required type="number" step="0.1" value={formData.ancho_impresion}
                 onChange={e => setFormData({ ...formData, ancho_impresion: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
                 placeholder="Ej: 7.5" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Alto Impresión (cm)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Alto de Impresión (cm)</label>
               <input required type="number" step="0.1" value={formData.alto_impresion}
                 onChange={e => setFormData({ ...formData, alto_impresion: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
                 placeholder="Ej: 15.2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Stock Inicial</label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Stock Inicial</label>
               <input required type="number" value={formData.stock}
                 onChange={e => setFormData({ ...formData, stock: e.target.value })}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
                 placeholder="Ej: 100" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Molde (Fondo Verde + Cobertor Blanco)</label>
-              <label className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-violet-500 transition-colors">
-                <Upload className="w-5 h-5 text-zinc-500" />
-                <span className="text-sm text-zinc-400 truncate">{molde ? molde.name : 'Seleccionar imagen...'}</span>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Lámina / Molde original (PNG)</label>
+              <label className="flex items-center gap-2 bg-brand-black/50 border border-white/5 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-brand-red/40 transition-colors">
+                <Upload className="w-4 h-4 text-brand-red shrink-0" />
+                <span className="text-xs text-zinc-400 truncate">{molde ? molde.name : 'Subir diseño base...'}</span>
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => setMolde(e.target.files[0])} />
               </label>
             </div>
           </div>
           <div className="flex gap-3 mt-6">
             <button disabled={loading} type="submit"
-              className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-50">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Guardar
+              className="btn-primary px-6 py-3 text-xs uppercase tracking-wider font-bold">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              <span>Crear Modelo</span>
             </button>
             <button type="button" onClick={() => setShowForm(false)}
-              className="px-6 py-3 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancelar</button>
+              className="btn-secondary px-6 py-3 text-xs uppercase tracking-wider font-bold">Cancelar</button>
           </div>
         </form>
       )}
 
-      {/* Brand Filter */}
+      {/* Brand Tabs Filters */}
       {marcas.length > 0 && (
-        <div className="flex items-center gap-2 mb-6 flex-wrap">
-          <span className="text-xs text-zinc-500 mr-1">Filtrar:</span>
+        <div className="flex items-center gap-2 flex-wrap border-b border-white/5 pb-4">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-2">Marcas:</span>
           <button onClick={() => setFiltroMarca('todos')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filtroMarca === 'todos' ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
-            Todas ({modelos.length})
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              filtroMarca === 'todos' 
+                ? 'bg-brand-red text-white' 
+                : 'bg-brand-medium text-zinc-400 hover:text-white hover:bg-brand-light'
+            }`}>
+            Todos ({modelos.length})
           </button>
           {marcas.map(m => (
             <button key={m} onClick={() => setFiltroMarca(m)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filtroMarca === m ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                filtroMarca === m 
+                  ? 'bg-brand-red text-white' 
+                  : 'bg-brand-medium text-zinc-400 hover:text-white hover:bg-brand-light'
+              }`}>
               {m} ({modelos.filter(x => x.marca === m).length})
             </button>
           ))}
         </div>
       )}
 
-      {/* Models Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-800/50 border-b border-zinc-800 text-zinc-400">
-            <tr>
-              <th className="p-4 font-medium">Preview</th>
-              <th className="p-4 font-medium">Marca</th>
-              <th className="p-4 font-medium">Nombre</th>
-              <th className="p-4 font-medium">Dimensiones</th>
-              <th className="p-4 font-medium">Stock</th>
-              <th className="p-4 font-medium">Estado</th>
-              <th className="p-4 font-medium text-right">Acciones</th>
+      {/* Model Grid/Table */}
+      <div className="bg-brand-dark/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="bg-brand-dark/85 border-b border-white/5 text-zinc-500">
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Preview Máscara</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Marca</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Modelo</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Tamaño de Impresión</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Inventario</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Estado</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-white/5">
             {filtered.map(m => (
-              <tr key={m.id} className={`hover:bg-zinc-800/20 transition-colors ${!m.activo ? 'opacity-40' : ''}`}>
+              <tr key={m.id} className={`hover:bg-brand-medium/20 transition-all duration-300 group ${!m.activo ? 'opacity-30' : ''}`}>
                 <td className="p-4">
-                  <div className="w-12 h-12 rounded-xl bg-zinc-800 flex items-center justify-center overflow-hidden border border-zinc-700">
+                  <div className="w-11 h-11 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5">
                     {m.molde_preview_url ? (
-                      <img src={`http://localhost:5000${m.molde_preview_url}`} alt={m.nombre} className="w-10 h-10 object-contain" />
+                      <img src={`http://localhost:5000${m.molde_preview_url}`} alt={m.nombre} className="w-9 h-9 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                     ) : m.molde_url ? (
-                      <img src={`http://localhost:5000${m.molde_url}`} alt={m.nombre} className="w-10 h-10 object-contain" />
+                      <img src={`http://localhost:5000${m.molde_url}`} alt={m.nombre} className="w-9 h-9 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                     ) : (
-                      <Image className="w-5 h-5 text-zinc-600" />
+                      <Image className="w-4 h-4 text-zinc-600" />
                     )}
                   </div>
                 </td>
                 <td className="p-4">
-                  <span className="px-2 py-1 rounded-md bg-zinc-800 text-xs text-zinc-300 font-medium">{m.marca || '—'}</span>
+                  <span className="px-2.5 py-1 rounded-lg bg-brand-medium border border-white/5 text-[9px] text-zinc-300 font-bold uppercase tracking-wider">{m.marca || '—'}</span>
                 </td>
-                <td className="p-4 font-semibold">{m.nombre}</td>
-                <td className="p-4 text-zinc-400">{m.ancho_impresion} × {m.alto_impresion} cm</td>
+                <td className="p-4 font-bold text-sm text-zinc-200 group-hover:text-white transition-colors">{m.nombre}</td>
+                <td className="p-4 text-zinc-400 font-semibold">{m.ancho_impresion} × {m.alto_impresion} cm</td>
                 <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    m.stock > 10 ? 'bg-emerald-500/10 text-emerald-400' :
-                    m.stock > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
-                  }`}>{m.stock}</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
+                    m.stock > 10 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' :
+                    m.stock > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/15' : 'bg-brand-red/10 text-brand-red border border-brand-red/15 animate-pulse-glow'
+                  }`}>{m.stock} unidades</span>
                 </td>
                 <td className="p-4">
-                  <span className={`text-xs font-medium ${m.activo ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${m.activo ? 'text-emerald-400' : 'text-zinc-500'}`}>
                     {m.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
                 <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-1">
                     <button onClick={() => handleToggle(m.id)}
-                      className="p-2 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
-                      title={m.activo ? 'Desactivar' : 'Activar'}>
-                      {m.activo ? <ToggleRight className="w-5 h-5 text-emerald-400" /> : <ToggleLeft className="w-5 h-5" />}
+                      className="p-2 rounded-xl bg-brand-medium hover:bg-brand-light text-zinc-400 hover:text-white transition-all cursor-pointer border border-white/5"
+                      title={m.activo ? 'Desactivar modelo' : 'Activar modelo'}>
+                      {m.activo ? <ToggleRight className="w-4 h-4 text-brand-red" /> : <ToggleLeft className="w-4 h-4" />}
                     </button>
                     <button onClick={() => handleDelete(m.id, m.nombre)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-zinc-500 hover:text-red-400" title="Eliminar">
+                      className="p-2 hover:bg-brand-red/10 border border-transparent hover:border-brand-red/20 rounded-xl text-zinc-600 hover:text-brand-red transition-all cursor-pointer" title="Eliminar del sistema">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -211,9 +227,11 @@ export default function Modelos() {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan="7" className="p-8 text-center text-zinc-500">
-                {filtroMarca !== 'todos' ? `No hay modelos de ${filtroMarca}.` : 'No hay modelos. Haz clic en "Nuevo Modelo".'}
-              </td></tr>
+              <tr>
+                <td colSpan="7" className="p-10 text-center text-zinc-500 font-bold uppercase tracking-wider">
+                  {filtroMarca !== 'todos' ? `No se encontraron modelos de ${filtroMarca}.` : 'No hay modelos disponibles.'}
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

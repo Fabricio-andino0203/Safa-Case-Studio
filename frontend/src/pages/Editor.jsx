@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Canvas, FabricImage, Rect } from 'fabric';
-import { Upload, ArrowRight, ArrowLeft, Layers, Trash2, ChevronUp, ChevronDown, Grid3X3, Palette, Image as ImageIcon } from 'lucide-react';
+import { Upload, ArrowRight, ArrowLeft, Layers, Trash2, ChevronUp, ChevronDown, Grid3X3, Palette, Image as ImageIcon, Sparkles, Check } from 'lucide-react';
 import axios from 'axios';
 
 const BG_COLORS = [
@@ -130,8 +130,8 @@ export default function Editor() {
         img.set({
           scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
           left: W / 2, top: H / 2,
-          cornerColor: '#a78bfa', cornerStrokeColor: '#7c3aed', borderColor: '#a78bfa',
-          cornerSize: 14, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2,
+          cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
+          cornerSize: 12, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2,
         });
         img._imgIdx = idx;
         canvas.add(img);
@@ -161,8 +161,8 @@ export default function Editor() {
       img.set({
         scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
         left: W / 2, top: H / 2,
-        cornerColor: '#a78bfa', cornerStrokeColor: '#7c3aed', borderColor: '#a78bfa',
-        cornerSize: 14, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2,
+        cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
+        cornerSize: 12, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2,
       });
       img._imgIdx = idx;
       canvas.add(img);
@@ -253,63 +253,79 @@ export default function Editor() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Canvas */}
-      <div className="flex-1 flex items-center justify-center bg-zinc-900 p-6 lg:p-10">
-        <div className="relative">
-          <div className="absolute -inset-3 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 rounded-[2rem] blur-xl" />
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-zinc-700/50"
+    <div className="min-h-screen flex flex-col lg:flex-row bg-[#080808]">
+      {/* Canvas Area */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-10 relative">
+        <div className="absolute top-6 left-6 z-10">
+          <button onClick={() => navigate('/')} 
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white transition-all bg-brand-dark/80 px-4 py-2.5 rounded-xl border border-white/5 backdrop-blur-md cursor-pointer">
+            <ArrowLeft className="w-3.5 h-3.5 text-brand-red" /> Volver
+          </button>
+        </div>
+
+        {/* Studio Canvas Showcase */}
+        <div className="relative mt-8">
+          <div className="absolute -inset-4 bg-gradient-to-r from-brand-red/10 to-brand-red/5 rounded-[2.5rem] blur-2xl opacity-60 pointer-events-none" />
+          <div className="relative rounded-[1.8rem] overflow-hidden shadow-2xl shadow-black border border-white/5"
             style={bgId === 'check' ? {
-              backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
-              backgroundSize: '20px 20px',
-              backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+              backgroundImage: 'linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%)',
+              backgroundSize: '24px 24px',
+              backgroundPosition: '0 0, 0 12px, 12px -12px, -12px 0px',
+              backgroundColor: '#080808'
             } : {}}>
             <canvas ref={canvasRef} />
           </div>
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div className="w-full lg:w-[380px] bg-zinc-950 border-t lg:border-t-0 lg:border-l border-zinc-800 flex flex-col overflow-y-auto max-h-screen">
-        <div className="p-6 flex-1 overflow-y-auto">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" /> Volver
-          </button>
-
-          <h2 className="text-xl font-bold mb-1">
-            Diseña tu <span className="text-violet-400">{modelo?.nombre}</span>
-          </h2>
-          <p className="text-zinc-500 text-xs mb-5">
+      {/* Canva Style Tool Sidebar */}
+      <div className="w-full lg:w-[400px] bg-brand-dark border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col h-screen overflow-hidden shrink-0">
+        
+        {/* Sidebar Header */}
+        <div className="p-6 border-b border-white/5 bg-brand-black/40">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Sparkles className="w-4 h-4 text-brand-red" />
+            <span className="text-[10px] font-bold text-brand-red uppercase tracking-widest">Case Personalizado</span>
+          </div>
+          <h2 className="text-xl font-bold text-white uppercase tracking-tight">{modelo?.nombre}</h2>
+          <p className="text-zinc-500 text-xs mt-0.5">
             {modelo?.marca && <span>{modelo.marca} · </span>}{modelo?.ancho_impresion} × {modelo?.alto_impresion} cm
           </p>
+        </div>
 
-          {/* Upload */}
-          <label className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white py-3 px-4 rounded-xl cursor-pointer transition-all font-semibold shadow-lg shadow-violet-500/20 hover:scale-[1.02] active:scale-[0.98] mb-4 text-sm">
-            <Upload className="w-4 h-4" />
-            <span>{images.length > 0 ? 'Agregar Otra Imagen' : 'Subir Imagen'}</span>
-            <input type="file" className="hidden" accept="image/*" multiple onChange={handleUpload} />
-          </label>
+        {/* Workspace Panels (Scrollable) */}
+        <div className="flex-1 p-6 overflow-y-auto space-y-6">
+          
+          {/* UPLOAD SECTION */}
+          <div>
+            <label className="w-full flex items-center justify-center gap-2 bg-brand-red hover:bg-brand-red-hover text-white py-3.5 px-4 rounded-xl cursor-pointer transition-all duration-300 font-bold shadow-lg shadow-brand-red/20 hover:scale-[1.01] active:scale-[0.99] text-xs uppercase tracking-wider">
+              <Upload className="w-4 h-4" />
+              <span>{images.length > 0 ? 'Añadir Más Fotos' : 'Subir mis Fotos'}</span>
+              <input type="file" className="hidden" accept="image/*" multiple onChange={handleUpload} />
+            </label>
+            {images.length > 0 && (
+              <p className="text-[11px] text-zinc-500 text-center mt-2.5">
+                💡 Toca una capa en la lista para moverla o escalarla.
+              </p>
+            )}
+          </div>
 
-          {images.length > 0 && (
-            <p className="text-xs text-zinc-500 mb-4">{images.length} imagen{images.length > 1 ? 'es' : ''} · Toca una para seleccionar</p>
-          )}
-
-          {/* Pre-loaded Fondos */}
+          {/* BACKGROUND TEXTURES & PATTERNS */}
           {fondos.length > 0 && (
-            <div className="mb-4">
+            <div className="border border-white/5 rounded-2xl bg-brand-black/30 p-4">
               <button onClick={() => setShowFondos(!showFondos)}
-                className="flex items-center gap-2 mb-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors w-full">
-                <ImageIcon className="w-4 h-4 text-violet-400" />
+                className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:text-white transition-colors w-full">
+                <ImageIcon className="w-4 h-4 text-brand-red" />
                 <span>Diseños y Texturas</span>
-                <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${showFondos ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showFondos ? 'rotate-180' : ''}`} />
               </button>
               {showFondos && (
-                <div className="grid grid-cols-4 gap-2 animate-fade-in">
+                <div className="grid grid-cols-4 gap-2 mt-3 animate-fade-in">
                   {fondos.map(f => (
                     <button key={f.id} onClick={() => addUrlImage(`http://localhost:5000${f.imagen_url}`, f.nombre)}
-                      className="aspect-square rounded-lg bg-zinc-900 border border-zinc-800 overflow-hidden hover:border-violet-500 transition-colors group"
+                      className="aspect-square rounded-xl bg-brand-medium border border-white/5 overflow-hidden hover:border-brand-red/50 transition-all group cursor-pointer"
                       title={f.nombre}>
-                      <img src={`http://localhost:5000${f.imagen_url}`} alt={f.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <img src={`http://localhost:5000${f.imagen_url}`} alt={f.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                     </button>
                   ))}
                 </div>
@@ -317,17 +333,21 @@ export default function Editor() {
             </div>
           )}
 
-          {/* Collage Layouts */}
+          {/* COLLAGE CONFIGURATION */}
           {images.length >= 2 && (
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Grid3X3 className="w-4 h-4 text-violet-400" />
-                <span className="text-sm font-medium">Collage</span>
+            <div className="border border-white/5 rounded-2xl bg-brand-black/30 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Grid3X3 className="w-4 h-4 text-brand-red" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">Layout Automático (Collage)</span>
               </div>
               <div className="flex gap-2 flex-wrap">
                 {COLLAGE_LAYOUTS.filter(l => l.id === 'free' || images.length >= l.min).map(l => (
                   <button key={l.id} onClick={() => l.id === 'free' ? clearCollage() : applyCollage(l.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeLayout === l.id ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+                    className={`px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      activeLayout === l.id 
+                        ? 'bg-brand-red text-white shadow-lg shadow-brand-red/15' 
+                        : 'bg-brand-medium text-zinc-400 hover:text-white border border-white/5 hover:bg-brand-light'
+                    }`}>
                     {l.label}
                   </button>
                 ))}
@@ -335,56 +355,68 @@ export default function Editor() {
             </div>
           )}
 
-          {/* Background Color */}
-          <div className="mb-4">
+          {/* DESIGN BACKGROUND COLOR */}
+          <div className="border border-white/5 rounded-2xl bg-brand-black/30 p-4">
             <button onClick={() => setShowBg(!showBg)}
-              className="flex items-center gap-2 mb-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors w-full">
-              <Palette className="w-4 h-4 text-violet-400" />
-              <span>Fondo del Diseño</span>
-              <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${showBg ? 'rotate-180' : ''}`} />
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:text-white transition-colors w-full">
+              <Palette className="w-4 h-4 text-brand-red" />
+              <span>Color de Fondo</span>
+              <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showBg ? 'rotate-180' : ''}`} />
             </button>
             {showBg && (
-              <div className="flex gap-2 flex-wrap animate-fade-in">
+              <div className="flex gap-2 flex-wrap mt-3 animate-fade-in">
                 {BG_COLORS.map(c => (
                   <button key={c.id} onClick={() => setBgId(c.id)} title={c.label}
-                    className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${bgId === c.id ? 'border-violet-500 ring-2 ring-violet-500/30' : 'border-zinc-700'}`}
+                    className={`w-7 h-7 rounded-lg border transition-all cursor-pointer hover:scale-110 flex items-center justify-center ${
+                      bgId === c.id 
+                        ? 'border-brand-red ring-2 ring-brand-red/20' 
+                        : 'border-white/10 hover:border-white/30'
+                    }`}
                     style={c.value ? { backgroundColor: c.value } : {
-                      backgroundImage: 'linear-gradient(45deg, #ccc 25%, #fff 25%, #fff 50%, #ccc 50%, #ccc 75%, #fff 75%)',
+                      backgroundImage: 'linear-gradient(45deg, #333 25%, #111 25%, #111 50%, #333 50%, #333 75%, #111 75%)',
                       backgroundSize: '8px 8px'
-                    }} />
+                    }}>
+                    {bgId === c.id && <Check className="w-3.5 h-3.5 text-brand-red" />}
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Layers Panel */}
+          {/* LAYER WORKSPACE MANAGER */}
           {images.length > 0 && (
-            <div>
+            <div className="border border-white/5 rounded-2xl bg-brand-black/30 p-4">
               <button onClick={() => setShowLayers(!showLayers)}
-                className="flex items-center gap-2 mb-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors w-full">
-                <Layers className="w-4 h-4 text-violet-400" />
+                className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-300 hover:text-white transition-colors w-full">
+                <Layers className="w-4 h-4 text-brand-red" />
                 <span>Capas ({images.length})</span>
-                <ChevronDown className={`w-3 h-3 ml-auto transition-transform ${showLayers ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showLayers ? 'rotate-180' : ''}`} />
               </button>
               {showLayers && (
-                <div className="space-y-1 animate-fade-in">
+                <div className="space-y-2 mt-3 animate-fade-in">
                   {images.map((item, i) => (
                     <div key={item.id}
                       onClick={() => selectImage(i)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors text-xs ${selectedIdx === i ? 'bg-violet-600/20 border border-violet-500/30 text-white' : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white'}`}>
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-all border text-xs font-semibold ${
+                        selectedIdx === i 
+                          ? 'bg-brand-red/10 border-brand-red/30 text-white' 
+                          : 'bg-brand-medium border-white/5 text-zinc-400 hover:text-white hover:bg-brand-light'
+                      }`}>
                       <span className="flex-1 truncate">{item.name}</span>
-                      <button onClick={(e) => { e.stopPropagation(); moveLayer(i, 'up'); }}
-                        className="p-1 hover:bg-zinc-700 rounded" title="Subir capa">
-                        <ChevronUp className="w-3 h-3" />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); moveLayer(i, 'down'); }}
-                        className="p-1 hover:bg-zinc-700 rounded" title="Bajar capa">
-                        <ChevronDown className="w-3 h-3" />
-                      </button>
-                      <button onClick={(e) => { e.stopPropagation(); removeImage(i); }}
-                        className="p-1 hover:bg-red-500/20 hover:text-red-400 rounded" title="Eliminar">
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); moveLayer(i, 'up'); }}
+                          className="p-1 hover:bg-brand-light rounded-lg text-zinc-400 hover:text-white transition-colors" title="Subir capa">
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); moveLayer(i, 'down'); }}
+                          className="p-1 hover:bg-brand-light rounded-lg text-zinc-400 hover:text-white transition-colors" title="Bajar capa">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                          className="p-1 hover:bg-brand-red/20 text-zinc-500 hover:text-brand-red rounded-lg transition-all" title="Eliminar">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -393,13 +425,14 @@ export default function Editor() {
           )}
         </div>
 
-        {/* Continue Button */}
-        <div className="p-6 border-t border-zinc-800">
+        {/* Sidebar Footer with Continue Action */}
+        <div className="p-6 border-t border-white/5 bg-brand-black/40">
           <button onClick={handleExport} disabled={images.length === 0}
-            className="w-full flex items-center justify-center gap-2 bg-white text-black py-3.5 px-6 rounded-xl hover:bg-zinc-100 transition-all font-bold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]">
-            <span>Continuar</span> <ArrowRight className="w-5 h-5" />
+            className="w-full flex items-center justify-center gap-2 bg-brand-red hover:bg-brand-red-hover text-white py-4 px-6 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-brand-red/15 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-20 disabled:scale-100 disabled:cursor-not-allowed uppercase tracking-wider text-xs">
+            <span>Continuar al Pago</span> <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+
       </div>
     </div>
   );

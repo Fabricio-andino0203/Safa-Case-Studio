@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, AlertTriangle, Trash2 } from 'lucide-react';
+import { Save, AlertTriangle, Trash2, Sparkles, Smartphone, Check } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -25,7 +25,7 @@ export default function Inventario() {
   };
 
   const handleDelete = async (id, nombre) => {
-    if (!confirm(`¿Seguro que deseas eliminar "${nombre}"?`)) return;
+    if (!confirm(`¿Seguro que deseas eliminar "${nombre}" del inventario?`)) return;
     try {
       await axios.delete(`${API_URL}/modelos/${id}`);
       fetchModelos();
@@ -40,107 +40,124 @@ export default function Inventario() {
   const outOfStock = modelos.filter(m => m.stock === 0 && m.activo);
 
   return (
-    <div className="p-8">
-      <header className="mb-6">
-        <h2 className="text-3xl font-bold">Inventario</h2>
-        <p className="text-zinc-400 text-sm">Controla la disponibilidad de tus modelos.</p>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <header className="flex items-center justify-between border-b border-white/5 pb-4">
+        <div>
+          <div className="flex items-center gap-1.5 text-brand-red mb-1">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Stock de Almacén</span>
+          </div>
+          <h2 className="text-2xl font-black uppercase tracking-tight text-white leading-none">Control de Inventario</h2>
+          <p className="text-zinc-500 text-xs mt-1">Monitorea y actualiza la cantidad de protectores físicos disponibles para personalización express.</p>
+        </div>
       </header>
 
-      {/* Alerts */}
+      {/* Modern Neon Warnings Banner */}
       {(lowStock.length > 0 || outOfStock.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {outOfStock.length > 0 && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
-              <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
+            <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-brand-red/5 border border-brand-red/10 animate-fade-in">
+              <AlertTriangle className="w-5 h-5 text-brand-red shrink-0 mt-0.5 animate-pulse-glow" />
               <div>
-                <p className="text-sm font-medium text-red-400">Sin Stock</p>
-                <p className="text-xs text-zinc-500">{outOfStock.map(m => m.nombre).join(', ')}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-red">Faltantes Críticos (Sin Stock)</p>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{outOfStock.map(m => m.nombre).join(', ')}</p>
               </div>
             </div>
           )}
           {lowStock.length > 0 && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 animate-fade-in">
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-400">Stock Bajo</p>
-                <p className="text-xs text-zinc-500">{lowStock.map(m => `${m.nombre} (${m.stock})`).join(', ')}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-500">Últimas Unidades (Stock Bajo)</p>
+                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{lowStock.map(m => `${m.nombre} (${m.stock})`).join(', ')}</p>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Brand Filter */}
+      {/* Brand Filters tabs */}
       {marcas.length > 0 && (
-        <div className="flex items-center gap-2 mb-6 flex-wrap">
-          <span className="text-xs text-zinc-500 mr-1">Filtrar:</span>
+        <div className="flex items-center gap-2 flex-wrap border-b border-white/5 pb-4">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-2">Filtrar:</span>
           <button onClick={() => setFiltroMarca('todos')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filtroMarca === 'todos' ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
-            Todas ({modelos.length})
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+              filtroMarca === 'todos' 
+                ? 'bg-brand-red text-white' 
+                : 'bg-brand-medium text-zinc-400 hover:text-white hover:bg-brand-light'
+            }`}>
+            Todos ({modelos.length})
           </button>
           {marcas.map(m => (
             <button key={m} onClick={() => setFiltroMarca(m)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filtroMarca === m ? 'bg-violet-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'}`}>
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                filtroMarca === m 
+                  ? 'bg-brand-red text-white' 
+                  : 'bg-brand-medium text-zinc-400 hover:text-white hover:bg-brand-light'
+              }`}>
               {m} ({modelos.filter(x => x.marca === m).length})
             </button>
           ))}
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-800/50 border-b border-zinc-800 text-zinc-400">
-            <tr>
-              <th className="p-4 font-medium">Marca</th>
-              <th className="p-4 font-medium">Modelo</th>
-              <th className="p-4 font-medium">Dimensiones</th>
-              <th className="p-4 font-medium">Estado</th>
-              <th className="p-4 font-medium">Stock Actual</th>
-              <th className="p-4 font-medium text-right">Actualizar / Acciones</th>
+      {/* Inventory Table Frame */}
+      <div className="bg-brand-dark/40 border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-fade-in">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr className="bg-brand-dark/85 border-b border-white/5 text-zinc-500">
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Marca</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Modelo</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Tamaño de Molde</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Estatus</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Stock Disponible</th>
+              <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-right">Ajuste de Cantidad / Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800">
+          <tbody className="divide-y divide-white/5">
             {filtered.map(m => {
               const hasChanged = m.newStock !== undefined && parseInt(m.newStock) !== m.stock;
               return (
-                <tr key={m.id} className={`hover:bg-zinc-800/20 transition-colors ${!m.activo ? 'opacity-40' : ''}`}>
+                <tr key={m.id} className={`hover:bg-brand-medium/20 transition-all duration-300 group ${!m.activo ? 'opacity-30' : ''}`}>
                   <td className="p-4">
-                    <span className="px-2 py-1 rounded-md bg-zinc-800 text-xs text-zinc-300 font-medium">{m.marca || '—'}</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-brand-medium border border-white/5 text-[9px] text-zinc-300 font-bold uppercase tracking-wider">{m.marca || '—'}</span>
                   </td>
-                  <td className="p-4 font-semibold">{m.nombre}</td>
-                  <td className="p-4 text-zinc-400">{m.ancho_impresion} × {m.alto_impresion} cm</td>
+                  <td className="p-4 font-bold text-sm text-zinc-200 group-hover:text-white transition-colors">{m.nombre}</td>
+                  <td className="p-4 text-zinc-400 font-semibold">{m.ancho_impresion} × {m.alto_impresion} cm</td>
                   <td className="p-4">
-                    <span className={`text-xs font-medium ${m.activo ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {m.activo ? 'Activo' : 'Inactivo'}
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${m.activo ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                      {m.activo ? 'Habilitado' : 'Deshabilitado'}
                     </span>
                   </td>
                   <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      m.stock > 10 ? 'bg-emerald-500/10 text-emerald-400' :
-                      m.stock > 0 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
-                    }`}>{m.stock} unds</span>
+                    <span className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${
+                      m.stock > 10 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' :
+                      m.stock > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/15' : 'bg-brand-red/10 text-brand-red border border-brand-red/15 animate-pulse-glow'
+                    }`}>{m.stock} unidades</span>
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <input type="number"
-                        className={`w-20 bg-zinc-950 border rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-violet-500 transition-colors ${
-                          hasChanged ? 'border-violet-500' : 'border-zinc-700'
+                        className={`w-20 bg-brand-black border rounded-xl px-3 py-1.5 text-white text-xs font-bold focus:outline-none transition-colors text-center ${
+                          hasChanged ? 'border-brand-red ring-2 ring-brand-red/15' : 'border-white/5 hover:border-white/10'
                         }`}
                         value={m.newStock !== undefined ? m.newStock : m.stock}
                         onChange={e => handleStockChange(m.id, e.target.value)} />
-                      <button
-                        onClick={() => updateStock(m.id, m.newStock !== undefined ? m.newStock : m.stock)}
+                      
+                      <button onClick={() => updateStock(m.id, m.newStock !== undefined ? m.newStock : m.stock)}
                         disabled={!hasChanged}
-                        className={`p-2 rounded-lg transition-colors inline-flex ${
-                          hasChanged ? 'bg-violet-600 text-white hover:bg-violet-500' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                        }`} title="Guardar">
-                        <Save className="w-4 h-4" />
+                        className={`p-2 rounded-xl transition-all border inline-flex cursor-pointer ${
+                          hasChanged 
+                            ? 'bg-brand-red text-white border-brand-red hover:bg-brand-red-hover shadow-lg shadow-brand-red/15' 
+                            : 'bg-brand-medium text-zinc-600 border-white/5 cursor-not-allowed'
+                        }`} title="Confirmar Ajuste">
+                        <Check className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(m.id, m.nombre)}
-                        className="p-2 rounded-lg transition-colors inline-flex bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                        title="Eliminar">
+
+                      <button onClick={() => handleDelete(m.id, m.nombre)}
+                        className="p-2 border border-transparent hover:border-brand-red/20 rounded-xl text-zinc-600 hover:text-brand-red transition-all cursor-pointer"
+                        title="Eliminar del sistema">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -149,7 +166,11 @@ export default function Inventario() {
               );
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan="6" className="p-8 text-center text-zinc-500">No hay modelos.</td></tr>
+              <tr>
+                <td colSpan="6" className="p-10 text-center text-zinc-500 font-bold uppercase tracking-wider">
+                  No se encontraron elementos disponibles en este catálogo.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>

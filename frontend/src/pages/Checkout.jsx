@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
-import { CheckCircle2, Loader2, ArrowLeft, Download, Copy, Store } from 'lucide-react';
+import { CheckCircle2, Loader2, ArrowLeft, Copy, Store, Smartphone, User, Phone, MapPin, Zap } from 'lucide-react';
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -64,61 +64,68 @@ export default function Checkout() {
     }
   };
 
-  // Success screen with QR
+  // Success screen (Aesthetic Digital Receipt)
   if (orderResult) {
     const trackingUrl = `${window.location.origin}/pedido/${orderResult.codigo}`;
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="glass p-10 rounded-3xl max-w-md w-full text-center animate-fade-in-up">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+      <div className="min-h-screen bg-[#080808] flex items-center justify-center p-6 relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-red/10 rounded-full blur-[100px]" />
+        
+        <div className="glass p-8 md:p-10 rounded-[2.5rem] max-w-md w-full text-center border border-white/5 relative z-10 shadow-2xl shadow-black animate-fade-in-up">
+          <div className="w-16 h-16 rounded-full bg-brand-red/10 flex items-center justify-center mx-auto mb-5 border border-brand-red/20 animate-pulse-glow">
+            <CheckCircle2 className="w-8 h-8 text-brand-red" />
           </div>
 
-          <h2 className="text-3xl font-bold mb-2">¡Orden Recibida!</h2>
-          <p className="text-zinc-400 mb-8">
-            Tu diseño para el <span className="text-white font-medium">{modelo.nombre}</span> ha sido enviado a producción.
+          <span className="text-[10px] font-bold uppercase tracking-widest text-brand-red bg-brand-red/10 px-3 py-1 rounded-full">
+            ORDEN ENVIADA AL TALLER
+          </span>
+
+          <h2 className="text-3xl font-bold mt-4 mb-2 text-white uppercase tracking-tight">¡ÉXITO TOTAL!</h2>
+          <p className="text-zinc-400 text-xs px-2 mb-8 leading-relaxed">
+            Tu diseño personalizado para el <span className="text-white font-semibold">{modelo.nombre}</span> ha ingresado a la cola de producción.
           </p>
 
-          {/* Order Code */}
-          <div className="bg-zinc-900 rounded-2xl p-6 mb-6 border border-zinc-800">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Tu código de seguimiento</p>
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-2xl font-mono font-bold text-violet-400">{orderResult.codigo}</span>
-              <button
-                onClick={handleCopyCode}
-                className="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
-                title="Copiar código"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+          {/* Ticket Information */}
+          <div className="bg-brand-dark/60 rounded-2xl p-5 mb-6 border border-white/5 text-left space-y-3">
+            <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+              <span className="text-[10px] uppercase text-zinc-500 font-bold tracking-wider">Código de Pedido</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-base font-extrabold text-brand-red text-glow-red">{orderResult.codigo}</span>
+                <button onClick={handleCopyCode} className="p-1.5 rounded-lg bg-brand-medium hover:bg-brand-light text-zinc-400 hover:text-white transition-all cursor-pointer">
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            {copied && <p className="text-xs text-emerald-400 mt-2">¡Copiado!</p>}
+            {copied && <p className="text-[10px] text-brand-red font-bold text-right mt-1">¡Código copiado al portapapeles!</p>}
+
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-500">Cliente:</span>
+              <span className="font-semibold text-zinc-200">{formData.cliente_nombre}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-500">Recogida:</span>
+              <span className="font-semibold text-zinc-200">
+                {tiendas.find(t => t.id === parseInt(formData.tienda_id))?.nombre || 'Por confirmar'}
+              </span>
+            </div>
           </div>
 
-          {/* QR Code */}
-          <div className="bg-white rounded-2xl p-6 mb-6 inline-block">
-            <QRCodeSVG
-              value={trackingUrl}
-              size={180}
-              bgColor="#ffffff"
-              fgColor="#000000"
-              level="M"
-            />
+          {/* QR Code Container */}
+          <div className="bg-white rounded-[1.8rem] p-5 mb-4 inline-block shadow-lg shadow-black/40">
+            <QRCodeSVG value={trackingUrl} size={150} bgColor="#ffffff" fgColor="#000000" level="M" />
           </div>
-          <p className="text-xs text-zinc-500 mb-6">Escanea el QR para consultar el estado de tu pedido</p>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-8">
+            Escanea para consultar estado mediante QR
+          </p>
 
-          <div className="space-y-3">
-            <button
-              onClick={() => navigate(`/pedido/${orderResult.codigo}`)}
-              className="w-full bg-violet-600 hover:bg-violet-500 text-white py-3 rounded-xl font-semibold transition-colors"
-            >
-              Ver Estado del Pedido
+          <div className="flex flex-col gap-2">
+            <button onClick={() => navigate(`/pedido/${orderResult.codigo}`)}
+              className="btn-primary w-full py-3.5 text-xs uppercase tracking-wider">
+              Seguimiento Online
             </button>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-xl font-medium transition-colors"
-            >
-              Volver al Inicio
+            <button onClick={() => navigate('/')}
+              className="btn-secondary w-full py-3.5 text-xs uppercase tracking-wider">
+              Volver al Catálogo
             </button>
           </div>
         </div>
@@ -127,101 +134,108 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen p-6 flex items-center justify-center">
-      <div className="w-full max-w-4xl glass rounded-3xl overflow-hidden border border-zinc-800 animate-fade-in-up">
+    <div className="min-h-screen bg-[#080808] p-6 flex items-center justify-center relative">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-brand-red/5 rounded-full blur-[100px]" />
+      
+      <div className="w-full max-w-4xl glass rounded-[2.5rem] overflow-hidden border border-white/5 relative z-10 shadow-2xl shadow-black animate-fade-in-up">
         <div className="grid md:grid-cols-2">
-          {/* Preview Side */}
-          <div className="p-8 bg-zinc-900/50 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800">
-            <h3 className="text-lg font-bold mb-6 text-zinc-300">Tu Diseño — {modelo.nombre}</h3>
-            <div className="relative w-56 rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-              <img src={diseno_base64} alt="Diseño final" className="w-full h-auto" />
-              <img
-                src={`http://localhost:5000${modelo.molde_url}`}
-                alt="Molde"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-70"
-              />
+          
+          {/* Design Summary (Left Panel) */}
+          <div className="p-8 md:p-10 bg-brand-black/30 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-white/5">
+            <div className="mb-6 flex flex-col items-center">
+              <span className="text-[10px] bg-brand-red/10 border border-brand-red/15 text-brand-red px-3 py-1 rounded-full font-bold uppercase tracking-widest mb-2 animate-pulse-glow">
+                DISEÑO EN ESPERA
+              </span>
+              <h3 className="text-lg font-bold text-white uppercase tracking-tight">{modelo.nombre}</h3>
             </div>
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors mt-6"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Editar diseño
+
+            {/* Simulated Case Preview with Backlight Case Outline */}
+            <div className="relative w-48 rounded-[2rem] overflow-hidden shadow-2xl shadow-black border border-white/5">
+              <img src={diseno_base64} alt="Diseño final" className="w-full h-auto" />
+              <img src={`http://localhost:5000${modelo.molde_url}`} alt="Molde" 
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-60" />
+            </div>
+
+            <button onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-white transition-colors mt-8 cursor-pointer">
+              <ArrowLeft className="w-3.5 h-3.5 text-brand-red" /> Editar Diseño
             </button>
           </div>
 
-          {/* Form Side */}
-          <div className="p-8">
-            <h2 className="text-2xl font-bold mb-1">Finalizar Pedido</h2>
-            <p className="text-zinc-400 text-sm mb-6">Ingresa tus datos para confirmar la orden.</p>
+          {/* Form Segment (Right Panel) */}
+          <div className="p-8 md:p-10 flex flex-col justify-center">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold uppercase tracking-tight text-white">Finalizar Pedido</h2>
+              <p className="text-zinc-500 text-xs mt-1">Completa los datos para enviar a producción express.</p>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Nombre Completo</label>
-                <input
-                  required
-                  type="text"
-                  value={formData.cliente_nombre}
-                  onChange={e => setFormData({ ...formData, cliente_nombre: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="Juan Pérez"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Teléfono</label>
-                <input
-                  required
-                  type="tel"
-                  value={formData.cliente_telefono}
-                  onChange={e => setFormData({ ...formData, cliente_telefono: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="+504 9999-9999"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">Dirección de Entrega</label>
-                <textarea
-                  required
-                  value={formData.cliente_direccion}
-                  onChange={e => setFormData({ ...formData, cliente_direccion: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors h-24 resize-none"
-                  placeholder="Calle 123, Ciudad"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-zinc-400 mb-1">
-                  <Store className="w-4 h-4 inline mr-1" />
-                  Tienda de Recogida
+                <label className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  <User className="w-3.5 h-3.5 text-brand-red" /> Nombre Completo
                 </label>
-                <select
-                  required
-                  value={formData.tienda_id}
-                  onChange={e => setFormData({ ...formData, tienda_id: e.target.value })}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors appearance-none"
-                >
-                  <option value="">Seleccionar tienda...</option>
-                  {tiendas.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
+                <input required type="text" value={formData.cliente_nombre}
+                  onChange={e => setFormData({ ...formData, cliente_nombre: e.target.value })}
+                  className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
+                  placeholder="Ej: Fabricio Andino" />
               </div>
 
-              <button
-                disabled={loading}
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-white text-black py-4 rounded-xl font-bold hover:bg-zinc-100 transition-all mt-4 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
-              >
+              <div>
+                <label className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  <Phone className="w-3.5 h-3.5 text-brand-red" /> Teléfono WhatsApp
+                </label>
+                <input required type="tel" value={formData.cliente_telefono}
+                  onChange={e => setFormData({ ...formData, cliente_telefono: e.target.value })}
+                  className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
+                  placeholder="Ej: +504 9999-9999" />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand-red" /> Dirección de Envío
+                </label>
+                <textarea required value={formData.cliente_direccion}
+                  onChange={e => setFormData({ ...formData, cliente_direccion: e.target.value })}
+                  className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white h-20 resize-none"
+                  placeholder="Dirección exacta para la entrega..." />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  <Store className="w-3.5 h-3.5 text-brand-red" /> Tienda de Enlace
+                </label>
+                <div className="relative">
+                  <select required value={formData.tienda_id}
+                    onChange={e => setFormData({ ...formData, tienda_id: e.target.value })}
+                    className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white appearance-none pr-8 cursor-pointer">
+                    <option value="" className="bg-[#121212]">Seleccionar sucursal...</option>
+                    {tiendas.map(t => (
+                      <option key={t.id} value={t.id} className="bg-[#121212]">{t.nombre}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
+                    <Store className="w-4 h-4 text-zinc-500" />
+                  </div>
+                </div>
+              </div>
+
+              <button disabled={loading} type="submit"
+                className="btn-primary w-full py-4 uppercase text-xs tracking-wider font-bold mt-4">
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>Procesando...</span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Inscribiendo en cola...</span>
                   </>
                 ) : (
-                  <span>Confirmar Orden</span>
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>Confirmar y Enviar a Taller</span>
+                  </>
                 )}
               </button>
             </form>
           </div>
+
         </div>
       </div>
     </div>
