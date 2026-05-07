@@ -12,6 +12,7 @@ export default function Modelos() {
     nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: ''
   });
   const [molde, setMolde] = useState(null);
+  const [imagenReal, setImagenReal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filtroMarca, setFiltroMarca] = useState('todos');
@@ -34,10 +35,14 @@ export default function Modelos() {
     data.append('alto_impresion', formData.alto_impresion);
     data.append('stock', formData.stock);
     data.append('molde', molde);
+    if (imagenReal) {
+      data.append('imagen_real', imagenReal);
+    }
     try {
       await axios.post(`${API_URL}/modelos`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
       setFormData({ nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '' });
       setMolde(null);
+      setImagenReal(null);
       setShowForm(false);
       fetchModelos();
     } catch (err) { console.error(err); alert('Error al crear modelo'); }
@@ -125,8 +130,16 @@ export default function Modelos() {
               <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Lámina / Molde original (PNG)</label>
               <label className="flex items-center gap-2 bg-brand-black/50 border border-white/5 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-brand-red/40 transition-colors">
                 <Upload className="w-4 h-4 text-brand-red shrink-0" />
-                <span className="text-xs text-zinc-400 truncate">{molde ? molde.name : 'Subir diseño base...'}</span>
+                <span className="text-xs text-zinc-400 truncate">{molde ? molde.name : 'Subir molde blanco...'}</span>
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => setMolde(e.target.files[0])} />
+              </label>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Foto / Render Real (Opcional)</label>
+              <label className="flex items-center gap-2 bg-brand-black/50 border border-white/5 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-brand-red/40 transition-colors">
+                <Image className="w-4 h-4 text-brand-red shrink-0" />
+                <span className="text-xs text-zinc-400 truncate">{imagenReal ? imagenReal.name : 'Subir foto del celular...'}</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => setImagenReal(e.target.files[0])} />
               </label>
             </div>
           </div>
@@ -185,14 +198,23 @@ export default function Modelos() {
             {filtered.map(m => (
               <tr key={m.id} className={`hover:bg-brand-medium/20 transition-all duration-300 group ${!m.activo ? 'opacity-30' : ''}`}>
                 <td className="p-4">
-                  <div className="w-11 h-11 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5">
-                    {m.molde_preview_url ? (
-                      <img src={`http://localhost:5000${m.molde_preview_url}`} alt={m.nombre} className="w-9 h-9 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
-                    ) : m.molde_url ? (
-                      <img src={`http://localhost:5000${m.molde_url}`} alt={m.nombre} className="w-9 h-9 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
-                    ) : (
-                      <Image className="w-4 h-4 text-zinc-600" />
-                    )}
+                  <div className="flex items-center gap-2">
+                    {/* Silhouette */}
+                    <div className="w-10 h-10 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5" title="Máscara de corte">
+                      {m.molde_preview_url ? (
+                        <img src={`http://localhost:5000${m.molde_preview_url}`} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                      ) : (
+                        <Image className="w-4 h-4 text-zinc-600" />
+                      )}
+                    </div>
+                    {/* Real render */}
+                    <div className="w-10 h-10 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5" title="Foto real">
+                      {m.imagen_real_url ? (
+                        <img src={`http://localhost:5000${m.imagen_real_url}`} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                      ) : (
+                        <Smartphone className="w-4 h-4 text-zinc-600" />
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="p-4">

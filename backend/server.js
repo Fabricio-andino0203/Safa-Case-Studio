@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ==========================================
-// MOLD IMAGE PROCESSING (Green Screen → Mask)
+// MOLD IMAGE PROCESSING (Smart Background → Mask)
 // ==========================================
 async function processMoldImage(inputPath) {
   const { data, info } = await sharp(inputPath)
@@ -44,23 +44,23 @@ async function processMoldImage(inputPath) {
   const prevBuf = Buffer.alloc(width * height * 4);
 
   for (let i = 0; i < width * height; i++) {
-    const s = i * 4; // source offset (ensureAlpha = 4 channels)
+    const s = i * 4; // source offset
     const d = i * 4; // dest offset
     const r = data[s], g = data[s + 1], b = data[s + 2], a = data[s + 3];
 
-    // Detect green background pixels
-    const isGreen = g > 80 && g > r * 1.2 && g > b * 1.2 && a > 128;
+    // Detect white/light pixels as the mold body (RGB > 190 and opaque enough)
+    const isWhiteMold = r > 190 && g > 190 && b > 190 && a > 50;
 
-    if (isGreen) {
-      // MASK: green area → dark opaque (hides design behind)
-      maskBuf[d] = 9; maskBuf[d + 1] = 9; maskBuf[d + 2] = 11; maskBuf[d + 3] = 255;
-      // PREVIEW: green area → transparent
-      prevBuf[d] = 0; prevBuf[d + 1] = 0; prevBuf[d + 2] = 0; prevBuf[d + 3] = 0;
-    } else {
-      // MASK: case area → transparent (shows design through)
+    if (isWhiteMold) {
+      // MASK: case area (white) → transparent (shows design through)
       maskBuf[d] = 0; maskBuf[d + 1] = 0; maskBuf[d + 2] = 0; maskBuf[d + 3] = 0;
-      // PREVIEW: case area → white semi-transparent (for catalog display)
+      // PREVIEW: case area (white) → white semi-transparent (for catalog display)
       prevBuf[d] = 255; prevBuf[d + 1] = 255; prevBuf[d + 2] = 255; prevBuf[d + 3] = 220;
+    } else {
+      // MASK: background (any other color) → dark opaque (hides design behind)
+      maskBuf[d] = 9; maskBuf[d + 1] = 9; maskBuf[d + 2] = 11; maskBuf[d + 3] = 255;
+      // PREVIEW: background (any other color) → transparent
+      prevBuf[d] = 0; prevBuf[d + 1] = 0; prevBuf[d + 2] = 0; prevBuf[d + 3] = 0;
     }
   }
 
@@ -92,18 +92,45 @@ app.get('/api/modelos', (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/modelos', upload.single('molde'), async (req, res) => {
+const uploadFields = upload.fields([
+  { name: 'molde', maxCount: 1 },
+  { name: 'imagen_real', maxCount: 1 }
+]);
+
+app.post('/api/modelos', uploadFields, async (req, res) => {
   try {
     const { nombre, marca, ancho_impresion, alto_impresion, stock } = req.body;
-    const molde_url = `/uploads/${req.file.filename}`;
-    const inputPath = path.join(uploadsDir, req.file.filename);
+    
+    const moldeFile = req.files['molde']?.[0];
+    const realImgFile = req.files['imagen_real']?.[0];
 
-    // Process: remove green bg → create mask + preview
+    if (!moldeFile) return res.status(400).json({ error: 'Sube la plantilla PNG del molde' });
+
+    const molde_url = `/uploads/${moldeFile.filename}`;
+    const inputPath = path.join(uploadsDir, moldeFile.filename);
+
+    // Process background removal for white mold
     const { maskUrl, previewUrl } = await processMoldImage(inputPath);
 
+    let imagen_real_url = '';
+    if (realImgFile) {
+      imagen_real_url = `/uploads/${realImgFile.filename}`;
+    }
+
     const result = db.prepare(
-      'INSERT INTO modelos (nombre, marca, molde_url, molde_mask_url, molde_preview_url, ancho_impresion, alto_impresion, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(nombre, marca || '', molde_url, maskUrl, previewUrl, parseFloat(ancho_impresion), parseFloat(alto_impresion), parseInt(stock) || 0);
+      `INSERT INTO modelos (nombre, marca, molde_url, molde_mask_url, molde_preview_url, imagen_real_url, ancho_impresion, alto_impresion, stock) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      nombre, 
+      marca || '', 
+      molde_url, 
+      maskUrl, 
+      previewUrl, 
+      imagen_real_url, 
+      parseFloat(ancho_impresion), 
+      parseFloat(alto_impresion), 
+      parseInt(stock) || 0
+    );
 
     const modelo = db.prepare('SELECT * FROM modelos WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(modelo);
@@ -141,6 +168,45 @@ app.delete('/api/modelos/:id', (req, res) => {
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ==========================================
+// ROUTES: Maintenance Reset Database
+// ==========================================
+app.post('/api/admin/reset-db', (req, res) => {
+  try {
+    // 1. Fetch and delete order files
+    const orders = db.prepare('SELECT diseno_url, pdf_url, qr_url FROM ordenes').all();
+    for (const ord of orders) {
+      try {
+        if (ord.diseno_url) {
+          const p = path.join(uploadsDir, path.basename(ord.diseno_url));
+          if (fs.existsSync(p)) fs.unlinkSync(p);
+        }
+        if (ord.pdf_url) {
+          const p = path.join(uploadsDir, path.basename(ord.pdf_url));
+          if (fs.existsSync(p)) fs.unlinkSync(p);
+        }
+        if (ord.qr_url) {
+          const p = path.join(uploadsDir, path.basename(ord.qr_url));
+          if (fs.existsSync(p)) fs.unlinkSync(p);
+        }
+      } catch (err) {
+        console.warn('Could not delete test file:', err.message);
+      }
+    }
+
+    // 2. Wipe orders
+    db.prepare('DELETE FROM ordenes').run();
+
+    // 3. Reset model stock to 100 for continuous testing
+    db.prepare('UPDATE modelos SET stock = 100').run();
+
+    res.json({ success: true, message: 'Database reset successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ==========================================
 // ROUTES: Ordenes

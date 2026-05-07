@@ -133,8 +133,11 @@ export default function Home() {
                 className="group glass-card p-5 rounded-2xl flex flex-col items-center justify-center gap-4 hover:bg-brand-medium border border-white/5 hover:border-brand-red/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-brand-red/5 cursor-pointer">
                 
                 {/* Image / Preview Box */}
-                <div className="relative w-28 h-28 rounded-xl bg-brand-black border border-white/5 flex items-center justify-center overflow-hidden group-hover:border-brand-red/10 transition-all duration-300">
-                  {modelo.molde_preview_url ? (
+                <div className="relative w-28 h-28 rounded-xl bg-brand-black border border-white/5 flex items-center justify-center overflow-hidden group-hover:border-brand-red/10 transition-all duration-300 p-2">
+                  {modelo.imagen_real_url ? (
+                    <img src={`http://localhost:5000${modelo.imagen_real_url}`} alt={modelo.nombre}
+                      className="w-full h-full object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
+                  ) : modelo.molde_preview_url ? (
                     <img src={`http://localhost:5000${modelo.molde_preview_url}`} alt={modelo.nombre}
                       className="w-20 h-20 object-contain opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
                   ) : (

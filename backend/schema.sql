@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS modelos (
     molde_url TEXT NOT NULL,
     molde_mask_url TEXT DEFAULT '',
     molde_preview_url TEXT DEFAULT '',
+    imagen_real_url TEXT DEFAULT '',
     ancho_impresion REAL NOT NULL,
     alto_impresion REAL NOT NULL,
     stock INTEGER NOT NULL DEFAULT 0,
