@@ -99,7 +99,7 @@ const uploadFields = upload.fields([
 
 app.post('/api/modelos', uploadFields, async (req, res) => {
   try {
-    const { nombre, marca, ancho_impresion, alto_impresion, stock } = req.body;
+    const { nombre, marca, ancho_impresion, alto_impresion, stock, imagen_real_url: req_imagen_real_url } = req.body;
     
     const moldeFile = req.files['molde']?.[0];
     const realImgFile = req.files['imagen_real']?.[0];
@@ -112,7 +112,7 @@ app.post('/api/modelos', uploadFields, async (req, res) => {
     // Process background removal for white mold
     const { maskUrl, previewUrl } = await processMoldImage(inputPath);
 
-    let imagen_real_url = '';
+    let imagen_real_url = req_imagen_real_url || '';
     if (realImgFile) {
       imagen_real_url = `/uploads/${realImgFile.filename}`;
     }

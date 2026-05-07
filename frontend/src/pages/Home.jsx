@@ -5,6 +5,12 @@ import axios from 'axios';
 
 const API_URL = 'http://localhost:5000/api';
 
+const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `http://localhost:5000${url}`;
+};
+
 export default function Home() {
   const [modelos, setModelos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +141,7 @@ export default function Home() {
                 {/* Image / Preview Box */}
                 <div className="relative w-28 h-28 rounded-xl bg-brand-black border border-white/5 flex items-center justify-center overflow-hidden group-hover:border-brand-red/10 transition-all duration-300 p-2">
                   {modelo.imagen_real_url ? (
-                    <img src={`http://localhost:5000${modelo.imagen_real_url}`} alt={modelo.nombre}
+                    <img src={getImageUrl(modelo.imagen_real_url)} alt={modelo.nombre}
                       className="w-full h-full object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
                   ) : modelo.molde_preview_url ? (
                     <img src={`http://localhost:5000${modelo.molde_preview_url}`} alt={modelo.nombre}

@@ -4,15 +4,18 @@ import { Upload, Plus, Loader2, Trash2, ToggleLeft, ToggleRight, Image, Sparkles
 
 const API_URL = 'http://localhost:5000/api';
 
-const MARCAS = ['Apple', 'Samsung', 'Xiaomi', 'Motorola', 'Huawei', 'Oppo', 'Vivo', 'Realme', 'Honor', 'Google', 'OnePlus', 'Otra'];
+const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `http://localhost:5000${url}`;
+};
 
 export default function Modelos() {
   const [modelos, setModelos] = useState([]);
   const [formData, setFormData] = useState({
-    nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: ''
+    nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '', imagen_real_url: ''
   });
   const [molde, setMolde] = useState(null);
-  const [imagenReal, setImagenReal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filtroMarca, setFiltroMarca] = useState('todos');
@@ -26,7 +29,7 @@ export default function Modelos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!molde) { alert('Sube un molde PNG (fondo verde + cobertor blanco)'); return; }
+    if (!molde) { alert('Sube un molde PNG (fondo de cualquier color + cobertor blanco)'); return; }
     setLoading(true);
     const data = new FormData();
     data.append('nombre', formData.nombre);
@@ -34,15 +37,12 @@ export default function Modelos() {
     data.append('ancho_impresion', formData.ancho_impresion);
     data.append('alto_impresion', formData.alto_impresion);
     data.append('stock', formData.stock);
+    data.append('imagen_real_url', formData.imagen_real_url);
     data.append('molde', molde);
-    if (imagenReal) {
-      data.append('imagen_real', imagenReal);
-    }
     try {
       await axios.post(`${API_URL}/modelos`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setFormData({ nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '' });
+      setFormData({ nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '', imagen_real_url: '' });
       setMolde(null);
-      setImagenReal(null);
       setShowForm(false);
       fetchModelos();
     } catch (err) { console.error(err); alert('Error al crear modelo'); }
@@ -135,12 +135,11 @@ export default function Modelos() {
               </label>
             </div>
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Foto / Render Real (Opcional)</label>
-              <label className="flex items-center gap-2 bg-brand-black/50 border border-white/5 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-brand-red/40 transition-colors">
-                <Image className="w-4 h-4 text-brand-red shrink-0" />
-                <span className="text-xs text-zinc-400 truncate">{imagenReal ? imagenReal.name : 'Subir foto del celular...'}</span>
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => setImagenReal(e.target.files[0])} />
-              </label>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">URL de la Imagen Real (Opcional)</label>
+              <input type="text" value={formData.imagen_real_url}
+                onChange={e => setFormData({ ...formData, imagen_real_url: e.target.value })}
+                className="glass-input w-full px-4 py-3 rounded-xl text-xs text-white"
+                placeholder="Ej: https://example.com/imagen.png" />
             </div>
           </div>
           <div className="flex gap-3 mt-6">
@@ -210,7 +209,7 @@ export default function Modelos() {
                     {/* Real render */}
                     <div className="w-10 h-10 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5" title="Foto real">
                       {m.imagen_real_url ? (
-                        <img src={`http://localhost:5000${m.imagen_real_url}`} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                        <img src={getImageUrl(m.imagen_real_url)} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                       ) : (
                         <Smartphone className="w-4 h-4 text-zinc-600" />
                       )}
