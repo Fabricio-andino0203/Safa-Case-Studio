@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  @apply bg-zinc-950 text-zinc-50 antialiased;
+  font-family: var(--font-sans);
+}
+
+@utility glass {
+  background: rgb(24 24 27 / 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(39 39 42);
+}
