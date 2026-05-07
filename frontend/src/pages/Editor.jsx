@@ -243,6 +243,7 @@ export default function Editor() {
         img._imgIdx = idx;
         canvas.add(img);
         canvas.setActiveObject(img);
+        canvas.renderAll();
 
         setImages(prev => [...prev, { id: idx, name: file.name.substring(0, 20), fabricObj: img }]);
         setSelectedIdx(idx);
@@ -275,6 +276,7 @@ export default function Editor() {
       img._imgIdx = idx;
       canvas.add(img);
       canvas.setActiveObject(img);
+      canvas.renderAll();
 
       setImages(prev => [...prev, { id: idx, name: name.substring(0, 20), fabricObj: img }]);
       setSelectedIdx(idx);
