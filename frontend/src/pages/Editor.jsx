@@ -7,6 +7,7 @@ import {
   Maximize, Minimize, ZoomIn, ZoomOut, Move, RotateCcw, RotateCw, AlignCenter, Sliders, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import axios from 'axios';
+import { API_URL, getImageUrl } from '../config';
 
 const BG_COLORS = [
   { id: 'check', label: 'Transparente', value: null },
@@ -209,7 +210,7 @@ export default function Editor() {
 
   // Fetch pre-loaded backgrounds
   useEffect(() => {
-    axios.get('http://localhost:5000/api/fondos/activos')
+    axios.get(`${API_URL}/fondos/activos`)
       .then(res => setFondos(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -596,10 +597,10 @@ export default function Editor() {
             {activePanel === 'textures' && (
               <div className="grid grid-cols-3 gap-2">
                 {fondos.map(f => (
-                  <button key={f.id} onClick={() => addUrlImage(`http://localhost:5000${f.imagen_url}`, f.nombre)}
+                  <button key={f.id} onClick={() => addUrlImage(getImageUrl(f.imagen_url), f.nombre)}
                     className="aspect-square rounded-xl bg-brand-medium border border-white/5 overflow-hidden hover:border-brand-red/30 transition-all group cursor-pointer"
                     title={f.nombre}>
-                    <img src={`http://localhost:5000${f.imagen_url}`} alt={f.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <img src={getImageUrl(f.imagen_url)} alt={f.nombre} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
                   </button>
                 ))}
               </div>
@@ -696,7 +697,7 @@ export default function Editor() {
 
             {/* ADVANCED VECTOR OVERLAY MASK with SVG Outline Filter */}
             <img 
-              src={`http://localhost:5000${modelo?.molde_mask_url || modelo?.molde_url}`} 
+              src={getImageUrl(modelo?.molde_mask_url || modelo?.molde_url)} 
               alt="Outline Contour Mask"
               className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
               style={{ 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Upload, Plus, Loader2, Trash2, ToggleLeft, ToggleRight, Image as ImageIcon, Sparkles, X } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL, getImageUrl } from '../../config';
 const CATEGORIAS = ['Diseño', 'Textura', 'Fondo', 'Patrón', 'Degradado'];
 
 export default function Fondos() {
@@ -147,8 +147,8 @@ export default function Fondos() {
           <div key={f.id} className={`group relative rounded-2xl overflow-hidden border bg-brand-dark/40 transition-all duration-300 ${
             !f.activo ? 'opacity-30 border-white/5' : 'border-white/5 hover:border-brand-red/30 hover:scale-[1.01]'
           }`}>
-            <div className="aspect-[3/4] bg-brand-black cursor-pointer" onClick={() => setPreview(`http://localhost:5000${f.imagen_url}`)}>
-              <img src={`http://localhost:5000${f.imagen_url}`} alt={f.nombre}
+            <div className="aspect-[3/4] bg-brand-black cursor-pointer" onClick={() => setPreview(getImageUrl(f.imagen_url))}>
+              <img src={getImageUrl(f.imagen_url)} alt={f.nombre}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="p-4 border-t border-white/5">

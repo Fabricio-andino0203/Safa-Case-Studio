@@ -4,7 +4,7 @@ import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { CheckCircle2, Loader2, ArrowLeft, Copy, Store, Smartphone, User, Phone, MapPin, Zap } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../config';
 
 export default function Checkout() {
   const { state } = useLocation();

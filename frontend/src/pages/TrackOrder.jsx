@@ -4,7 +4,7 @@ import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { Package, Clock, Truck, CheckCircle2, XCircle, ArrowLeft, Smartphone, Calendar, MapPin, Zap, Star } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL, getImageUrl } from '../config';
 
 const ESTADOS = {
   pendiente: { label: 'Recibido', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', step: 0 },
@@ -175,7 +175,7 @@ export default function TrackOrder() {
           <div className="flex flex-col items-center justify-center gap-4 bg-brand-medium/30 p-4 rounded-3xl border border-white/5">
             {/* Interactive Design thumbnail with glow */}
             <div className="relative w-24 rounded-xl overflow-hidden shadow-xl border border-white/5 hover:scale-105 transition-transform duration-300">
-              <img src={`http://localhost:5000${orden.diseno_url}`} alt="Tu diseño" className="w-full h-auto" />
+              <img src={getImageUrl(orden.diseno_url)} alt="Tu diseño" className="w-full h-auto" />
             </div>
             
             {/* White card for barcode/QR scanner integration */}

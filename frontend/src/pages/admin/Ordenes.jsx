@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Download, Clock, Package, Truck, CheckCircle2, XCircle, ChevronDown, Eye, Filter, Sparkles, Smartphone, Check } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL, getImageUrl } from '../../config';
 
 const ESTADOS = {
   pendiente: { label: 'Pendiente', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/15', next: 'en_produccion' },
@@ -130,9 +130,9 @@ export default function Ordenes() {
                       <span className="text-zinc-400 font-medium">{orden.tienda_nombre || '—'}</span>
                     </td>
                     <td className="p-4">
-                      <button onClick={() => setPreviewImage(`http://localhost:5000${orden.diseno_url}`)}
+                      <button onClick={() => setPreviewImage(getImageUrl(orden.diseno_url))}
                         className="relative group/preview shrink-0 border border-white/5 hover:border-brand-red/30 rounded-xl overflow-hidden block">
-                        <img src={`http://localhost:5000${orden.diseno_url}`} alt="Diseño"
+                        <img src={getImageUrl(orden.diseno_url)} alt="Diseño"
                           className="w-11 h-11 object-cover opacity-80 group-hover/preview:opacity-100 group-hover/preview:scale-105 transition-all duration-300" />
                         <div className="absolute inset-0 bg-black/60 rounded-xl opacity-0 group-hover/preview:opacity-100 flex items-center justify-center transition-opacity">
                           <Eye className="w-3.5 h-3.5 text-white" />
@@ -149,7 +149,7 @@ export default function Ordenes() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <a href={`http://localhost:5000${orden.pdf_url}`} target="_blank" rel="noreferrer"
+                        <a href={getImageUrl(orden.pdf_url)} target="_blank" rel="noreferrer"
                           className="p-2 bg-brand-medium border border-white/5 hover:bg-brand-light rounded-xl text-zinc-400 hover:text-white transition-all inline-flex cursor-pointer"
                           title="Descargar PDF Listo para Impresión">
                           <Download className="w-4 h-4" />

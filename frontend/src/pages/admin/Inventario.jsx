@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Save, AlertTriangle, Trash2, Sparkles, Smartphone, Check } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../../config';
 
 export default function Inventario() {
   const [modelos, setModelos] = useState([]);

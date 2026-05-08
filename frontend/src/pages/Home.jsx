@@ -3,13 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Smartphone, ArrowRight, Sparkles, AlertTriangle, ShieldCheck, Zap } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
-
-const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:5000${url}`;
-};
+import { API_URL, getImageUrl } from '../config';
 
 export default function Home() {
   const [modelos, setModelos] = useState([]);
@@ -144,7 +138,7 @@ export default function Home() {
                     <img src={getImageUrl(modelo.imagen_real_url)} alt={modelo.nombre}
                       className="w-full h-full object-contain opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
                   ) : modelo.molde_preview_url ? (
-                    <img src={`http://localhost:5000${modelo.molde_preview_url}`} alt={modelo.nombre}
+                    <img src={getImageUrl(modelo.molde_preview_url)} alt={modelo.nombre}
                       className="w-20 h-20 object-contain opacity-70 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300" />
                   ) : (
                     <Smartphone className="w-10 h-10 text-zinc-600 group-hover:text-brand-red transition-colors" />

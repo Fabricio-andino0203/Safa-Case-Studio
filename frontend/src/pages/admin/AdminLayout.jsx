@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Smartphone, Package, ShieldCheck, Image as ImageIcon, ExternalLink, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import axios from 'axios';
+import { API_URL } from '../../config';
 
 export default function AdminLayout() {
   const location = useLocation();
@@ -20,7 +21,7 @@ export default function AdminLayout() {
     if (resetConfirmText !== 'REINICIAR') return;
     setResetting(true);
     try {
-      await axios.post('http://localhost:5000/api/admin/reset-db');
+      await axios.post(`${API_URL}/admin/reset-db`);
       alert('¡Base de datos y archivos de prueba reiniciados con éxito! Stock restaurado a 100 unidades.');
       setShowResetModal(false);
       setResetConfirmText('');

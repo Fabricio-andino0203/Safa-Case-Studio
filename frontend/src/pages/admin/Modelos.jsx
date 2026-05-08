@@ -2,13 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Upload, Plus, Loader2, Trash2, ToggleLeft, ToggleRight, Image, Sparkles, Smartphone, ArrowRight, X } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
-
-const getImageUrl = (url) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:5000${url}`;
-};
+import { API_URL, getImageUrl } from '../../config';
 
 const MARCAS = ['Apple', 'Samsung', 'Xiaomi', 'Motorola', 'Huawei', 'Oppo', 'Vivo', 'Realme', 'Honor', 'Google', 'OnePlus', 'Otra'];
 
@@ -203,7 +197,7 @@ export default function Modelos() {
                     {/* Silhouette */}
                     <div className="w-10 h-10 rounded-xl bg-brand-black flex items-center justify-center overflow-hidden border border-white/5" title="Máscara de corte">
                       {m.molde_preview_url ? (
-                        <img src={`http://localhost:5000${m.molde_preview_url}`} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                        <img src={getImageUrl(m.molde_preview_url)} alt={m.nombre} className="w-8 h-8 object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                       ) : (
                         <Image className="w-4 h-4 text-zinc-600" />
                       )}
