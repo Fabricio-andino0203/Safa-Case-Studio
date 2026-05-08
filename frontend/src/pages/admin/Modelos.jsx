@@ -10,6 +10,8 @@ const getImageUrl = (url) => {
   return `http://localhost:5000${url}`;
 };
 
+const MARCAS = ['Apple', 'Samsung', 'Xiaomi', 'Motorola', 'Huawei', 'Oppo', 'Vivo', 'Realme', 'Honor', 'Google', 'OnePlus', 'Otra'];
+
 export default function Modelos() {
   const [modelos, setModelos] = useState([]);
   const [formData, setFormData] = useState({
