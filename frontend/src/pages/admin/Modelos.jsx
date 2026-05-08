@@ -36,12 +36,15 @@ export default function Modelos() {
     data.append('imagen_real_url', formData.imagen_real_url);
     data.append('molde', molde);
     try {
-      await axios.post(`${API_URL}/modelos`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await axios.post(`${API_URL}/modelos`, data);
       setFormData({ nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '', imagen_real_url: '' });
       setMolde(null);
       setShowForm(false);
       fetchModelos();
-    } catch (err) { console.error(err); alert('Error al crear modelo'); }
+    } catch (err) { 
+      console.error(err); 
+      alert(err.response?.data?.error || 'Error al crear modelo'); 
+    }
     finally { setLoading(false); }
   };
 
