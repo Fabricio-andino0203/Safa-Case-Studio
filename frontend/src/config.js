@@ -6,10 +6,14 @@ export const BASE_URL = isProd ? '' : 'http://localhost:5000';
 
 export const getImageUrl = (url) => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  // If it's a relative path starting with /uploads, prepend appropriate base
-  if (url.startsWith('/uploads')) {
-    return `${BASE_URL}${url}`;
+  if (url.startsWith('http')) return url;
+  
+  // Clean the path: remove leading / and any existing uploads/ prefix
+  let cleanPath = url.startsWith('/') ? url.substring(1) : url;
+  if (cleanPath.startsWith('uploads/')) {
+    cleanPath = cleanPath.substring(8);
   }
-  return `${BASE_URL}/uploads/${url}`;
+  
+  const prefix = isProd ? '/api/uploads' : `${BASE_URL}/uploads`;
+  return `${prefix}/${cleanPath}`;
 };
