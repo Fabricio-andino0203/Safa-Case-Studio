@@ -119,6 +119,15 @@ export default function Checkout() {
           </p>
 
           <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => {
+                const msg = `🚀 *NUEVA ORDEN RECIBIDA*%0A%0A*Código:* ${orderResult.codigo}%0A*Modelo:* ${modelo.nombre}%0A*Cliente:* ${formData.cliente_nombre}%0A*Tienda:* ${tiendas.find(t => t.id === parseInt(formData.tienda_id))?.nombre || 'General'}%0A%0A*Ver Diseño:* ${window.location.origin}/pedido/${orderResult.codigo}`;
+                window.open(`https://wa.me/50499999999?text=${msg}`, '_blank');
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white w-full py-3.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-900/20"
+            >
+              <Phone className="w-4 h-4" /> Enviar a WhatsApp Taller
+            </button>
             <button onClick={() => navigate(`/pedido/${orderResult.codigo}`)}
               className="btn-primary w-full py-3.5 text-xs uppercase tracking-wider">
               Seguimiento Online

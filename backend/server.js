@@ -397,40 +397,47 @@ app.post('/api/ordenes', async (req, res) => {
     const qr_url = `/uploads/${qrFile}`;
 
     // ==========================================
-    // GENERATE PDF — Design horizontal at top of A4
+    // GENERATE PDF — Optimized Compact Layout
     // ==========================================
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4 portrait
+    const cmToPts = 28.346;
 
-    // Load design image
+    // 1. HEADER INFO (TOP LEFT)
+    page.drawText('SAFA CASE STUDIO - ORDEN DE PRODUCCIÓN', { x: 40, y: 810, size: 10, color: rgb(0, 0, 0) });
+    page.drawText(`CÓDIGO: ${codigo}`, { x: 40, y: 795, size: 12, color: rgb(0.88, 0.11, 0.18) });
+    page.drawText(`MODELO: ${modelo.nombre}`, { x: 40, y: 780, size: 10, color: rgb(0.2, 0.2, 0.2) });
+    page.drawText(`CLIENTE: ${cliente_nombre} | TEL: ${cliente_telefono}`, { x: 40, y: 765, size: 8, color: rgb(0.4, 0.4, 0.4) });
+
+    // 2. QR CODE (TOP RIGHT - NEXT TO TEXT)
+    const qrBytes = fs.readFileSync(path.join(uploadsDir, qrFile));
+    const qrImg = await pdfDoc.embedPng(qrBytes);
+    page.drawImage(qrImg, { x: 480, y: 750, width: 75, height: 75 });
+    page.drawText('ESCANEAR PARA ESTADO', { x: 478, y: 742, size: 6, color: rgb(0.5, 0.5, 0.5) });
+
+    // 3. DESIGN IMAGE (ROTATED 90°)
     const imageBytes = fs.readFileSync(path.join(uploadsDir, imgFile));
-
-    // Rotate the design 90° (portrait → landscape) using sharp
     const rotatedBytes = await sharp(imageBytes).rotate(90).png().toBuffer();
     const pngImage = await pdfDoc.embedPng(rotatedBytes);
 
-    // Calculate print dimensions in points (1 cm = 28.346 pts)
-    const cmToPts = 28.346;
-    // After 90° rotation: width=alto, height=ancho
+    // print dimensions in points
     const printWidth = modelo.alto_impresion * cmToPts;
     const printHeight = modelo.ancho_impresion * cmToPts;
 
-    // Place at top center of A4
+    // Place below header
     const x = (595 - printWidth) / 2;
-    const y = 842 - printHeight - 40; // 40pts margin from top
+    const y = 730 - printHeight; // Starting immediately after header + QR
 
     page.drawImage(pngImage, { x, y, width: printWidth, height: printHeight });
 
-    // Add text info below the design
-    const textY = y - 25;
-    page.drawText(`${codigo}  |  ${modelo.nombre}  |  ${cliente_nombre}  |  Tel: ${cliente_telefono}`, {
-      x: 50, y: textY, size: 9, color: rgb(0.3, 0.3, 0.3)
+    // Dotted line for separation
+    page.drawLine({
+      start: { x: 40, y: 740 },
+      end: { x: 555, y: 740 },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8),
+      dashArray: [2, 2]
     });
-
-    // QR in bottom right
-    const qrBytes = fs.readFileSync(path.join(uploadsDir, qrFile));
-    const qrImg = await pdfDoc.embedPng(qrBytes);
-    page.drawImage(qrImg, { x: 495, y: 20, width: 70, height: 70 });
 
     const pdfFile = `print_${Date.now()}.pdf`;
     fs.writeFileSync(path.join(uploadsDir, pdfFile), await pdfDoc.save());

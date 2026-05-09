@@ -149,6 +149,28 @@ export default function Ordenes() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* WHATSAPP NOTIFICATIONS */}
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => {
+                              const msg = `Hola *${orden.cliente_nombre}*, hemos recibido tu pedido *${orden.codigo}* de un *${orden.modelo_nombre}* en Safa Case Studio. Pronto iniciaremos la producción. %0A%0ASeguimiento: ${window.location.origin}/pedido/${orden.codigo}`;
+                              window.open(`https://wa.me/${orden.cliente_telefono.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                            }}
+                            className="p-2 bg-green-500/10 border border-green-500/20 hover:bg-green-500 hover:text-white rounded-xl text-green-500 transition-all cursor-pointer"
+                            title="Notificar Recibido">
+                            <Clock className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const msg = `¡Hola *${orden.cliente_nombre}*! 🚀 Excelentes noticias: Tu cobertor para el *${orden.modelo_nombre}* ya está listo para entrega en la sucursal *${orden.tienda_nombre || 'acordada'}*. %0A%0A¡Te esperamos!`;
+                              window.open(`https://wa.me/${orden.cliente_telefono.replace(/\D/g, '')}?text=${msg}`, '_blank');
+                            }}
+                            className="p-2 bg-brand-red/10 border border-brand-red/20 hover:bg-brand-red hover:text-white rounded-xl text-brand-red transition-all cursor-pointer"
+                            title="Notificar Listo">
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
                         <a href={getImageUrl(orden.pdf_url)} target="_blank" rel="noreferrer"
                           className="p-2 bg-brand-medium border border-white/5 hover:bg-brand-light rounded-xl text-zinc-400 hover:text-white transition-all inline-flex cursor-pointer"
                           title="Descargar PDF Listo para Impresión">
