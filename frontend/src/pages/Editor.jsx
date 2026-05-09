@@ -226,35 +226,45 @@ export default function Editor() {
     fabricRef.current.renderAll();
   }, [bgId]);
 
-  // Add Uploaded Image — uses createObjectURL + HTMLImageElement for reliable rendering
+  // ============================================================
+  // IMAGE LOADING — Fabric.js v7 API
+  // FabricImage.fromURL(url, loadOptions, imageOptions) is the
+  // only reliable way to create images in v7. It uses the internal
+  // loadImage() which properly decodes the image before constructing.
+  // ============================================================
+
   const addImage = useCallback((file) => {
     const canvas = fabricRef.current;
     if (!canvas || !file) return;
 
-    const blobUrl = URL.createObjectURL(file);
-    const imgEl = new Image();
-    imgEl.onload = () => {
-      const fabricImg = new FabricImage(imgEl);
+    // Convert file to data URL, then use FabricImage.fromURL (v7 official API)
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
       const newId = imageCountRef.current++;
-      const scale = Math.max((W * 0.8) / fabricImg.width, (H * 0.5) / fabricImg.height);
-      fabricImg.set({
-        scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
+      const imgProps = {
+        originX: 'center', originY: 'center',
         left: W / 2, top: H / 2,
         cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
         cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
         padding: 8
-      });
-      fabricImg._imgIdx = newId;
-      canvas.add(fabricImg);
-      canvas.setActiveObject(fabricImg);
-      canvas.requestRenderAll();
+      };
 
-      setImages(prev => [...prev, { id: newId, name: file.name.substring(0, 20), fabricObj: fabricImg }]);
-      setSelectedIdx(newId);
-      URL.revokeObjectURL(blobUrl);
+      // v7 signature: fromURL(url, {crossOrigin, signal}, imageOptions)
+      FabricImage.fromURL(dataUrl, {}, imgProps).then((fabricImg) => {
+        const scale = Math.max((W * 0.8) / fabricImg.width, (H * 0.5) / fabricImg.height);
+        fabricImg.set({ scaleX: scale, scaleY: scale });
+        fabricImg._imgIdx = newId;
+        fabricImg.set('dirty', true);
+        canvas.add(fabricImg);
+        canvas.setActiveObject(fabricImg);
+        canvas.requestRenderAll();
+
+        setImages(prev => [...prev, { id: newId, name: file.name.substring(0, 20), fabricObj: fabricImg }]);
+        setSelectedIdx(newId);
+      }).catch(err => console.error('Error adding image:', err));
     };
-    imgEl.onerror = () => { console.error('Failed to load image'); URL.revokeObjectURL(blobUrl); };
-    imgEl.src = blobUrl;
+    reader.readAsDataURL(file);
   }, []);
 
   const handleUpload = (e) => {
@@ -263,34 +273,33 @@ export default function Editor() {
     e.target.value = '';
   };
 
-  // Add Preloaded Design Texture — uses HTMLImageElement for reliable cross-origin rendering
+  // Add Preloaded Design Texture
   const addUrlImage = useCallback((url, name) => {
     const canvas = fabricRef.current;
     if (!canvas || !url) return;
 
-    const imgEl = new Image();
-    imgEl.crossOrigin = 'anonymous';
-    imgEl.onload = () => {
-      const fabricImg = new FabricImage(imgEl);
-      const newId = imageCountRef.current++;
+    const newId = imageCountRef.current++;
+    const imgProps = {
+      originX: 'center', originY: 'center',
+      left: W / 2, top: H / 2,
+      cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
+      cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
+      padding: 8
+    };
+
+    // v7 signature: fromURL(url, {crossOrigin, signal}, imageOptions)
+    FabricImage.fromURL(url, { crossOrigin: 'anonymous' }, imgProps).then((fabricImg) => {
       const scale = Math.max((W * 1.0) / fabricImg.width, (H * 1.0) / fabricImg.height);
-      fabricImg.set({
-        scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
-        left: W / 2, top: H / 2,
-        cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
-        cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
-        padding: 8
-      });
+      fabricImg.set({ scaleX: scale, scaleY: scale });
       fabricImg._imgIdx = newId;
+      fabricImg.set('dirty', true);
       canvas.add(fabricImg);
       canvas.setActiveObject(fabricImg);
       canvas.requestRenderAll();
 
       setImages(prev => [...prev, { id: newId, name: name.substring(0, 20), fabricObj: fabricImg }]);
       setSelectedIdx(newId);
-    };
-    imgEl.onerror = () => console.error('Failed to load texture:', url);
-    imgEl.src = url;
+    }).catch(err => console.error('Error adding texture:', err));
   }, []);
 
   // Depth operations
