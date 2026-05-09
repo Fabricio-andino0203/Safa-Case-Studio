@@ -490,4 +490,30 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+// ============================================================
+// ADMIN / MAINTENANCE
+// ============================================================
+app.post('/api/admin/reset-db', async (req, res) => {
+  try {
+    // 1. Delete all orders
+    db.prepare('DELETE FROM ordenes').run();
+    
+    // 2. Reset stock for all models
+    db.prepare('UPDATE modelos SET stock = 100').run();
+
+    // 3. Delete generated files (designs, PDFs, QRs)
+    // We only keep the original "molde" and "preview" files if possible, 
+    // or just clear the uploads folder if we assume a full clean.
+    // For safety, let's just clear the database tables related to transactions.
+    
+    res.json({ message: 'Sistema reiniciado correctamente' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
