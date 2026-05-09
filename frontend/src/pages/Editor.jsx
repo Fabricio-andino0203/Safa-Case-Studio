@@ -226,34 +226,35 @@ export default function Editor() {
     fabricRef.current.renderAll();
   }, [bgId]);
 
-  // Add Uploaded Image
-  const addImage = useCallback(async (file) => {
+  // Add Uploaded Image — uses createObjectURL + HTMLImageElement for reliable rendering
+  const addImage = useCallback((file) => {
     const canvas = fabricRef.current;
     if (!canvas || !file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (f) => {
-      try {
-        const img = await FabricImage.fromURL(f.target.result);
-        const newId = imageCountRef.current++;
-        const scale = Math.max((W * 0.8) / img.width, (H * 0.5) / img.height);
-        img.set({
-          scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
-          left: W / 2, top: H / 2,
-          cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
-          cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
-          padding: 8
-        });
-        img._imgIdx = newId;
-        canvas.add(img);
-        canvas.setActiveObject(img);
-        canvas.renderAll();
+    const blobUrl = URL.createObjectURL(file);
+    const imgEl = new Image();
+    imgEl.onload = () => {
+      const fabricImg = new FabricImage(imgEl);
+      const newId = imageCountRef.current++;
+      const scale = Math.max((W * 0.8) / fabricImg.width, (H * 0.5) / fabricImg.height);
+      fabricImg.set({
+        scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
+        left: W / 2, top: H / 2,
+        cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
+        cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
+        padding: 8
+      });
+      fabricImg._imgIdx = newId;
+      canvas.add(fabricImg);
+      canvas.setActiveObject(fabricImg);
+      canvas.requestRenderAll();
 
-        setImages(prev => [...prev, { id: newId, name: file.name.substring(0, 20), fabricObj: img }]);
-        setSelectedIdx(newId);
-      } catch (err) { console.error(err); }
+      setImages(prev => [...prev, { id: newId, name: file.name.substring(0, 20), fabricObj: fabricImg }]);
+      setSelectedIdx(newId);
+      URL.revokeObjectURL(blobUrl);
     };
-    reader.readAsDataURL(file);
+    imgEl.onerror = () => { console.error('Failed to load image'); URL.revokeObjectURL(blobUrl); };
+    imgEl.src = blobUrl;
   }, []);
 
   const handleUpload = (e) => {
@@ -262,29 +263,34 @@ export default function Editor() {
     e.target.value = '';
   };
 
-  // Add Preloaded Design Texture
-  const addUrlImage = useCallback(async (url, name) => {
+  // Add Preloaded Design Texture — uses HTMLImageElement for reliable cross-origin rendering
+  const addUrlImage = useCallback((url, name) => {
     const canvas = fabricRef.current;
     if (!canvas || !url) return;
-    try {
-      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+
+    const imgEl = new Image();
+    imgEl.crossOrigin = 'anonymous';
+    imgEl.onload = () => {
+      const fabricImg = new FabricImage(imgEl);
       const newId = imageCountRef.current++;
-      const scale = Math.max((W * 1.0) / img.width, (H * 1.0) / img.height);
-      img.set({
+      const scale = Math.max((W * 1.0) / fabricImg.width, (H * 1.0) / fabricImg.height);
+      fabricImg.set({
         scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
         left: W / 2, top: H / 2,
         cornerColor: '#E11D2E', cornerStrokeColor: '#ffffff', borderColor: '#E11D2E',
         cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
         padding: 8
       });
-      img._imgIdx = newId;
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.renderAll();
+      fabricImg._imgIdx = newId;
+      canvas.add(fabricImg);
+      canvas.setActiveObject(fabricImg);
+      canvas.requestRenderAll();
 
-      setImages(prev => [...prev, { id: newId, name: name.substring(0, 20), fabricObj: img }]);
+      setImages(prev => [...prev, { id: newId, name: name.substring(0, 20), fabricObj: fabricImg }]);
       setSelectedIdx(newId);
-    } catch (err) { console.error(err); }
+    };
+    imgEl.onerror = () => console.error('Failed to load texture:', url);
+    imgEl.src = url;
   }, []);
 
   // Depth operations
@@ -657,23 +663,23 @@ export default function Editor() {
         )}
 
         {/* WORKSPACE CENTRAL AREA (Figma Layout) */}
-        <div ref={containerRef} className="flex-1 flex items-center justify-center bg-[#0d0d0f] relative overflow-hidden p-6">
+        <div ref={containerRef} className="flex-1 flex items-center justify-center bg-[#e5e7eb] relative overflow-hidden p-6">
           
-          {/* Subtle Ambient Light Glow Behind the Case */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[550px] rounded-[3rem] bg-brand-red/5 blur-3xl pointer-events-none" />
+          {/* Subtle shadow behind the case viewport */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[600px] rounded-[3rem] bg-black/10 blur-3xl pointer-events-none" />
 
           {/* SCALABLE VIEWPORT CONTAINER (Matches phone case dimensions) */}
-          <div className="relative shadow-2xl shadow-black overflow-hidden rounded-[2.5rem] border border-white/5"
+          <div className="relative shadow-2xl overflow-hidden rounded-[2.5rem] border border-zinc-300"
             style={{ 
               width: viewportSize.w, 
               height: viewportSize.h,
               transition: 'width 0.2s, height 0.2s'
             }}>
             
-            {/* Transparent Checkerboard Base */}
-            <div className="absolute inset-0 z-0 bg-brand-black"
+            {/* White/Light-Gray Checkerboard — Classic PNG Transparency Pattern */}
+            <div className="absolute inset-0 z-0 bg-white"
               style={{
-                backgroundImage: 'linear-gradient(45deg, #121213 25%, transparent 25%), linear-gradient(-45deg, #121213 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #121213 75%), linear-gradient(-45deg, transparent 75%, #121213 75%)',
+                backgroundImage: 'linear-gradient(45deg, #e0e0e0 25%, transparent 25%), linear-gradient(-45deg, #e0e0e0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0e0e0 75%), linear-gradient(-45deg, transparent 75%, #e0e0e0 75%)',
                 backgroundSize: '16px 16px',
                 backgroundPosition: '0 0, 0 8px, 8px -8px, -8px 0px',
               }}
