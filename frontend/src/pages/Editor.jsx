@@ -29,7 +29,7 @@ import {
 import { API_URL, getImageUrl } from '../config';
 
 const Editor = () => {
-  const { id } = useParams();
+  const { modeloId } = useParams();
   const navigate = useNavigate();
   
   // Refs
@@ -57,8 +57,8 @@ const Editor = () => {
     const load = async () => {
       try {
         const [resMod, resFon] = await Promise.all([
-          axios.get(`${API_URL}/api/modelos/${id}`),
-          axios.get(`${API_URL}/api/fondos`)
+          axios.get(`${API_URL}/modelos/${modeloId}`),
+          axios.get(`${API_URL}/fondos`)
         ]);
         setModelo(resMod.data);
         setFondos(resFon.data);
@@ -67,7 +67,7 @@ const Editor = () => {
       }
     };
     load();
-  }, [id]);
+  }, [modeloId]);
 
   // Initialize Canvas
   useEffect(() => {
