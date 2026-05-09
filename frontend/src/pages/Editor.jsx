@@ -52,13 +52,6 @@ const Editor = () => {
   const [canvasZoom, setCanvasZoom] = useState(1);
   const [panMode, setPanMode] = useState(false);
 
-  // Helper for URLs
-  const getImageUrl = (url) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${API_URL}${url}`;
-  };
-
   // Load Data
   useEffect(() => {
     const load = async () => {
