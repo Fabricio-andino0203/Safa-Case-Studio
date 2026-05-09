@@ -8,12 +8,11 @@ export const getImageUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
   
-  // Clean the path: remove leading / and any existing uploads/ prefix
-  let cleanPath = url.startsWith('/') ? url.substring(1) : url;
-  if (cleanPath.startsWith('uploads/')) {
-    cleanPath = cleanPath.substring(8);
-  }
+  // Get just the filename from the path (e.g. /uploads/abc.png -> abc.png)
+  const parts = url.split('/');
+  const filename = parts[parts.length - 1];
   
-  const prefix = isProd ? '/api/uploads' : `${BASE_URL}/uploads`;
-  return `${prefix}/${cleanPath}`;
+  // All uploads should be accessible via API_URL (which is /api in prod) + /uploads
+  // So /api/uploads/filename
+  return `${API_URL}/uploads/${filename}`;
 };
