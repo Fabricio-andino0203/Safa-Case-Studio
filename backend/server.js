@@ -191,9 +191,18 @@ app.get('/api/modelos', (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/api/modelos/:id', (req, res) => {
+  try {
+    const row = db.prepare('SELECT * FROM modelos WHERE id = ?').get(req.params.id);
+    if (!row) return res.status(404).json({ error: 'Modelo no encontrado' });
+    res.json(row);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const uploadFields = upload.fields([
   { name: 'molde', maxCount: 1 },
-  { name: 'imagen_real', maxCount: 1 }
+  { name: 'imagen_real', maxCount: 1 },
+  { name: 'svg_molde', maxCount: 1 }
 ]);
 
 app.post('/api/modelos', uploadFields, async (req, res) => {
@@ -216,9 +225,12 @@ app.post('/api/modelos', uploadFields, async (req, res) => {
       imagen_real_url = `/uploads/${realImgFile.filename}`;
     }
 
+    const svgFile = req.files['svg_molde']?.[0];
+    const molde_svg_path = svgFile ? `/uploads/${svgFile.filename}` : '';
+
     const result = db.prepare(
-      `INSERT INTO modelos (nombre, marca, molde_url, molde_mask_url, molde_preview_url, imagen_real_url, ancho_impresion, alto_impresion, stock) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO modelos (nombre, marca, molde_url, molde_mask_url, molde_preview_url, imagen_real_url, ancho_impresion, alto_impresion, stock, molde_svg_path) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
       nombre, 
       marca || '', 
@@ -228,7 +240,8 @@ app.post('/api/modelos', uploadFields, async (req, res) => {
       imagen_real_url, 
       parseFloat(ancho_impresion), 
       parseFloat(alto_impresion), 
-      parseInt(stock) || 0
+      parseInt(stock) || 0,
+      molde_svg_path
     );
 
     const modelo = db.prepare('SELECT * FROM modelos WHERE id = ?').get(result.lastInsertRowid);

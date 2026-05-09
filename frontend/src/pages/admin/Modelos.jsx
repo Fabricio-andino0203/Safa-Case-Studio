@@ -12,6 +12,7 @@ export default function Modelos() {
     nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '', imagen_real_url: ''
   });
   const [molde, setMolde] = useState(null);
+  const [svgMolde, setSvgMolde] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [filtroMarca, setFiltroMarca] = useState('todos');
@@ -35,6 +36,7 @@ export default function Modelos() {
     data.append('stock', formData.stock);
     data.append('imagen_real_url', formData.imagen_real_url);
     data.append('molde', molde);
+    if (svgMolde) data.append('svg_molde', svgMolde);
     try {
       await axios.post(`${API_URL}/modelos`, data);
       setFormData({ nombre: '', marca: '', ancho_impresion: '', alto_impresion: '', stock: '', imagen_real_url: '' });
@@ -131,6 +133,14 @@ export default function Modelos() {
                 <Upload className="w-4 h-4 text-brand-red shrink-0" />
                 <span className="text-xs text-zinc-400 truncate">{molde ? molde.name : 'Subir molde blanco...'}</span>
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={e => setMolde(e.target.files[0])} />
+              </label>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Vector del Molde (SVG - Opcional)</label>
+              <label className="flex items-center gap-2 bg-brand-black/50 border border-white/5 border-dashed rounded-xl px-4 py-3 cursor-pointer hover:border-brand-red/40 transition-colors">
+                <Sparkles className="w-4 h-4 text-brand-red shrink-0" />
+                <span className="text-xs text-zinc-400 truncate">{svgMolde ? svgMolde.name : 'Subir SVG...'}</span>
+                <input type="file" accept=".svg" className="hidden" onChange={e => setSvgMolde(e.target.files[0])} />
               </label>
             </div>
             <div>

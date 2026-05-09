@@ -84,6 +84,26 @@ const Editor = () => {
 
     fabricRef.current = canvas;
 
+    // Load SVG ClipPath if available
+    if (modelo.molde_svg_path) {
+       util.loadImage(getImageUrl(modelo.molde_svg_path), { crossOrigin: 'anonymous' }).then((img) => {
+          // If it's a file, we might need to load it as SVG
+          util.loadSVGFromURL(getImageUrl(modelo.molde_svg_path), (objects, options) => {
+             const group = util.groupSVGElements(objects, options);
+             group.set({
+                left: W / 2,
+                top: H / 2,
+                originX: 'center',
+                originY: 'center',
+                selectable: false,
+                evented: false
+             });
+             canvas.clipPath = group;
+             canvas.renderAll();
+          });
+       });
+    }
+
     const handleSelection = () => {
       const active = canvas.getActiveObject();
       if (active && active._imgIdx !== undefined) {

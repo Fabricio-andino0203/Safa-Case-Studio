@@ -22,6 +22,7 @@ const migrations = [
   "ALTER TABLE modelos ADD COLUMN molde_mask_url TEXT DEFAULT ''",
   "ALTER TABLE modelos ADD COLUMN molde_preview_url TEXT DEFAULT ''",
   "ALTER TABLE modelos ADD COLUMN imagen_real_url TEXT DEFAULT ''",
+  "ALTER TABLE modelos ADD COLUMN molde_svg_path TEXT DEFAULT ''",
 ];
 
 for (const sql of migrations) {
