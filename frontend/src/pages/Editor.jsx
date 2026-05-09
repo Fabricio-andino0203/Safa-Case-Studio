@@ -67,6 +67,9 @@ export default function Editor() {
   const [activeLayout, setActiveLayout] = useState('free');
   const [fondos, setFondos] = useState([]);
   
+  // Stable counter ref for unique image IDs (avoids stale closure bugs)
+  const imageCountRef = useRef(0);
+  
   // Minimalist Panel Drawer state
   const [activePanel, setActivePanel] = useState(null); // 'textures' | 'collage' | 'layers' | 'bg' | null
   
@@ -232,7 +235,7 @@ export default function Editor() {
     reader.onload = async (f) => {
       try {
         const img = await FabricImage.fromURL(f.target.result);
-        const idx = images.length;
+        const newId = imageCountRef.current++;
         const scale = Math.max((W * 0.8) / img.width, (H * 0.5) / img.height);
         img.set({
           scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
@@ -241,17 +244,17 @@ export default function Editor() {
           cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
           padding: 8
         });
-        img._imgIdx = idx;
+        img._imgIdx = newId;
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
 
-        setImages(prev => [...prev, { id: idx, name: file.name.substring(0, 20), fabricObj: img }]);
-        setSelectedIdx(idx);
+        setImages(prev => [...prev, { id: newId, name: file.name.substring(0, 20), fabricObj: img }]);
+        setSelectedIdx(newId);
       } catch (err) { console.error(err); }
     };
     reader.readAsDataURL(file);
-  }, [images.length]);
+  }, []);
 
   const handleUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -265,7 +268,7 @@ export default function Editor() {
     if (!canvas || !url) return;
     try {
       const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      const idx = images.length;
+      const newId = imageCountRef.current++;
       const scale = Math.max((W * 1.0) / img.width, (H * 1.0) / img.height);
       img.set({
         scaleX: scale, scaleY: scale, originX: 'center', originY: 'center',
@@ -274,15 +277,15 @@ export default function Editor() {
         cornerSize: 10, cornerStyle: 'circle', transparentCorners: false, borderScaleFactor: 2.5,
         padding: 8
       });
-      img._imgIdx = idx;
+      img._imgIdx = newId;
       canvas.add(img);
       canvas.setActiveObject(img);
       canvas.renderAll();
 
-      setImages(prev => [...prev, { id: idx, name: name.substring(0, 20), fabricObj: img }]);
-      setSelectedIdx(idx);
+      setImages(prev => [...prev, { id: newId, name: name.substring(0, 20), fabricObj: img }]);
+      setSelectedIdx(newId);
     } catch (err) { console.error(err); }
-  }, [images.length]);
+  }, []);
 
   // Depth operations
   const moveLayer = (idx, dir) => {
@@ -466,21 +469,7 @@ export default function Editor() {
   return (
     <div className="min-h-screen bg-[#080808] flex flex-col overflow-hidden relative select-none">
       
-      {/* Hardware Accelerated SVG Outline Mask Filter */}
-      <svg width="0" height="0" className="absolute">
-        <defs>
-          <filter id="outline-red">
-            <feFlood floodColor="#E11D2E" result="red-color" />
-            <feComposite in="red-color" in2="SourceAlpha" operator="in" result="red-alpha" />
-            <feMorphology operator="dilate" radius="1.5" in="red-alpha" result="dilated" />
-            <feComposite in="dilated" in2="SourceAlpha" operator="out" result="border" />
-            <feMerge>
-              <feMergeNode in="SourceGraphic" />
-              <feMergeNode in="border" />
-            </feMerge>
-          </filter>
-        </defs>
-      </svg>
+      {/* Red outline is now pre-baked into the mask image server-side — no SVG filter needed */}
 
       {/* Editor Header Navigation */}
       <nav className="h-14 border-b border-white/5 bg-[#0b0b0c]/90 backdrop-blur-md px-6 flex items-center justify-between z-30 shrink-0">
@@ -695,16 +684,14 @@ export default function Editor() {
               <canvas ref={canvasRef} />
             </div>
 
-            {/* ADVANCED VECTOR OVERLAY MASK with SVG Outline Filter */}
+            {/* Pre-baked Mask Overlay (red outline built-in, no filter needed) */}
             <img 
               src={getImageUrl(modelo?.molde_mask_url || modelo?.molde_url)} 
               alt="Outline Contour Mask"
               className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
               style={{ 
                 width: viewportSize.w, 
-                height: viewportSize.h,
-                filter: 'url(#outline-red)',
-                mixBlendMode: 'normal'
+                height: viewportSize.h
               }}
               onError={(e) => { e.target.style.display = 'none'; }}
             />

@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ==========================================
-// MOLD IMAGE PROCESSING (Smart Background → Mask)
+// MOLD IMAGE PROCESSING (Flood-Fill Background Detection + Red Outline)
 // ==========================================
 async function processMoldImage(inputPath) {
   const { data, info } = await sharp(inputPath)
@@ -40,26 +40,124 @@ async function processMoldImage(inputPath) {
     .toBuffer({ resolveWithObject: true });
 
   const { width, height } = info;
-  const maskBuf = Buffer.alloc(width * height * 4);
-  const prevBuf = Buffer.alloc(width * height * 4);
+  const total = width * height;
 
-  for (let i = 0; i < width * height; i++) {
-    const s = i * 4; // source offset
-    const d = i * 4; // dest offset
+  // Step 1: Flood-fill from all 4 edges to find the TRUE background
+  // This is much more reliable than color thresholds — it finds everything
+  // connected to the image border, regardless of color.
+  const isBackground = new Uint8Array(total); // 0=mold, 1=background
+  const queue = [];
+
+  // Helper to get pixel index
+  const idx = (x, y) => y * width + x;
+
+  // Seed the flood fill from all border pixels
+  for (let x = 0; x < width; x++) {
+    queue.push(idx(x, 0));           // top edge
+    queue.push(idx(x, height - 1));  // bottom edge
+  }
+  for (let y = 0; y < height; y++) {
+    queue.push(idx(0, y));           // left edge
+    queue.push(idx(width - 1, y));   // right edge
+  }
+
+  // Mark border seeds
+  for (const p of queue) isBackground[p] = 1;
+
+  // BFS flood fill — spread to neighbors that are NOT white/light
+  // The mold body is white (R>200, G>200, B>200), so we stop at white pixels
+  let head = 0;
+  while (head < queue.length) {
+    const p = queue[head++];
+    const px = p % width;
+    const py = Math.floor(p / width);
+
+    const neighbors = [
+      px > 0 ? p - 1 : -1,
+      px < width - 1 ? p + 1 : -1,
+      py > 0 ? p - width : -1,
+      py < height - 1 ? p + width : -1,
+    ];
+
+    for (const n of neighbors) {
+      if (n < 0 || isBackground[n]) continue;
+      const s = n * 4;
+      const r = data[s], g = data[s + 1], b = data[s + 2], a = data[s + 3];
+
+      // If pixel is fully transparent, it's background
+      if (a < 30) {
+        isBackground[n] = 1;
+        queue.push(n);
+        continue;
+      }
+
+      // If pixel is NOT white/very light, it's background (non-mold)
+      // White mold pixels act as walls that stop the flood
+      const isWhite = r > 200 && g > 200 && b > 200;
+      if (!isWhite) {
+        isBackground[n] = 1;
+        queue.push(n);
+      }
+    }
+  }
+
+  // Step 2: Create a binary mold map (1=mold body, 0=not mold)
+  // Mold body = white pixels that are NOT background
+  const isMold = new Uint8Array(total);
+  for (let i = 0; i < total; i++) {
+    const s = i * 4;
     const r = data[s], g = data[s + 1], b = data[s + 2], a = data[s + 3];
+    const isWhite = r > 180 && g > 180 && b > 180 && a > 30;
+    isMold[i] = (isWhite && !isBackground[i]) ? 1 : 0;
+  }
 
-    // Detect white/light pixels as the mold body (RGB > 190 and opaque enough)
-    const isWhiteMold = r > 190 && g > 190 && b > 190 && a > 50;
+  // Step 3: Detect edge pixels of the mold (for red outline)
+  // An edge pixel is a mold pixel that has at least one non-mold neighbor
+  const OUTLINE_WIDTH = 3; // pixels of red border thickness
+  const isEdge = new Uint8Array(total);
 
-    if (isWhiteMold) {
-      // MASK: case area (white) → transparent (shows design through)
+  // Use distance-based edge: any mold pixel within OUTLINE_WIDTH of a non-mold pixel
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = idx(x, y);
+      if (!isMold[i]) continue;
+
+      let nearEdge = false;
+      for (let dy = -OUTLINE_WIDTH; dy <= OUTLINE_WIDTH && !nearEdge; dy++) {
+        for (let dx = -OUTLINE_WIDTH; dx <= OUTLINE_WIDTH && !nearEdge; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) { nearEdge = true; continue; }
+          if (!isMold[idx(nx, ny)]) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= OUTLINE_WIDTH) nearEdge = true;
+          }
+        }
+      }
+      if (nearEdge) isEdge[i] = 1;
+    }
+  }
+
+  // Step 4: Generate output buffers
+  const maskBuf = Buffer.alloc(total * 4);
+  const prevBuf = Buffer.alloc(total * 4);
+
+  for (let i = 0; i < total; i++) {
+    const d = i * 4;
+
+    if (isEdge[i]) {
+      // RED OUTLINE — baked into the mask
+      maskBuf[d] = 225; maskBuf[d + 1] = 29; maskBuf[d + 2] = 46; maskBuf[d + 3] = 255;
+      // Also show in preview
+      prevBuf[d] = 225; prevBuf[d + 1] = 29; prevBuf[d + 2] = 46; prevBuf[d + 3] = 255;
+    } else if (isMold[i]) {
+      // MOLD BODY → transparent in mask (design shows through)
       maskBuf[d] = 0; maskBuf[d + 1] = 0; maskBuf[d + 2] = 0; maskBuf[d + 3] = 0;
-      // PREVIEW: case area (white) → white semi-transparent (for catalog display)
-      prevBuf[d] = 255; prevBuf[d + 1] = 255; prevBuf[d + 2] = 255; prevBuf[d + 3] = 220;
+      // PREVIEW: white semi-transparent silhouette for catalog
+      prevBuf[d] = 255; prevBuf[d + 1] = 255; prevBuf[d + 2] = 255; prevBuf[d + 3] = 200;
     } else {
-      // MASK: background (any other color) → dark opaque (hides design behind)
+      // BACKGROUND → opaque dark in mask (hides design outside mold)
       maskBuf[d] = 9; maskBuf[d + 1] = 9; maskBuf[d + 2] = 11; maskBuf[d + 3] = 255;
-      // PREVIEW: background (any other color) → transparent
+      // PREVIEW: transparent
       prevBuf[d] = 0; prevBuf[d + 1] = 0; prevBuf[d + 2] = 0; prevBuf[d + 3] = 0;
     }
   }
