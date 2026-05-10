@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { PDFDocument, rgb } = require('pdf-lib');
+const { PDFDocument, rgb, degrees } = require('pdf-lib');
 const QRCode = require('qrcode');
 require('dotenv').config();
 
@@ -32,134 +32,183 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // ==========================================
-// MOLD IMAGE PROCESSING (Flood-Fill Background Detection + Red Outline)
+// MOLD IMAGE PROCESSING (Auto-Align, Straighten & Clean Background)
 // ==========================================
 async function processMoldImage(inputPath) {
-  const { data, info } = await sharp(inputPath)
+  console.log(`[PROCESS] Iniciando procesamiento de: ${path.basename(inputPath)}`);
+  
+  let { data, info } = await sharp(inputPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let width = info.width, height = info.height;
+  
+  const getMoldPixels = (buf, w, h, threshold = 160) => {
+    const total = w * h;
+    const isBg = new Uint8Array(total);
+    const q = [];
+    const idx = (x, y) => y * w + x;
+    for (let x = 0; x < w; x++) { q.push(idx(x, 0)); q.push(idx(x, h - 1)); }
+    for (let y = 0; y < h; y++) { q.push(idx(0, y)); q.push(idx(w - 1, y)); }
+    for (const p of q) isBg[p] = 1;
+    let head = 0;
+    while (head < q.length) {
+      const p = q[head++];
+      const px = p % w, py = Math.floor(p / w);
+      const neighbors = [px > 0 ? p - 1 : -1, px < w - 1 ? p + 1 : -1, py > 0 ? p - w : -1, py < h - 1 ? p + w : -1];
+      for (const n of neighbors) {
+        if (n < 0 || isBg[n]) continue;
+        const s = n * 4;
+        if (buf[s+3] < 30 || !(buf[s] > threshold && buf[s+1] > threshold && buf[s+2] > threshold)) {
+          isBg[n] = 1; q.push(n);
+        }
+      }
+    }
+    const mold = [];
+    for (let i = 0; i < total; i++) {
+      const s = i * 4;
+      if (buf[s] > threshold && buf[s+1] > threshold && buf[s+2] > threshold && buf[s+3] > 30 && !isBg[i]) {
+        mold.push({ x: i % w, y: Math.floor(i / w) });
+      }
+    }
+    return mold;
+  };
+
+  let moldPixels = getMoldPixels(data, width, height, 160);
+  if (moldPixels.length < 100) return { error: 'No se detectó el cobertor blanco' };
+
+  // BRUTE FORCE STRAIGHTENING (Find angle that minimizes bounding box width)
+  let bestAngle = 0;
+  let minBBoxWidth = Infinity;
+
+  // Calculate moments first for a good starting point
+  let m10 = 0, m01 = 0, m00 = moldPixels.length;
+  for (const p of moldPixels) { m10 += p.x; m01 += p.y; }
+  const cx = m10 / m00, cy = m01 / m00;
+  let mu20 = 0, mu02 = 0, mu11 = 0;
+  for (const p of moldPixels) {
+    const dx = p.x - cx, dy = p.y - cy;
+    mu20 += dx * dx; mu02 += dy * dy; mu11 += dx * dy;
+  }
+  let initialAngleDeg = 0.5 * Math.atan2(2 * mu11, mu20 - mu02) * (180 / Math.PI);
+  let initialRotation = 90 + initialAngleDeg;
+  if (initialRotation > 90) initialRotation -= 180;
+  if (initialRotation < -90) initialRotation += 180;
+
+  // Fine-tune by searching +/- 10 degrees around initial guess
+  for (let r = initialRotation - 10; r <= initialRotation + 10; r += 0.2) {
+    const rad = -r * (Math.PI / 180);
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    let minX = Infinity, maxX = -Infinity;
+    for (const p of moldPixels) {
+      const rx = (p.x - cx) * cos - (p.y - cy) * sin;
+      if (rx < minX) minX = rx; if (rx > maxX) maxX = rx;
+    }
+    const w = maxX - minX;
+    if (w < minBBoxWidth) { minBBoxWidth = w; bestAngle = r; }
+  }
+
+  const rotationNeeded = bestAngle;
+  console.log(`[PASS 1] Inclinación detectada. Aplicando rotación final de: ${(-rotationNeeded).toFixed(2)}°`);
+
+  const rotatedBuffer = await sharp(inputPath)
+    .rotate(-rotationNeeded, { background: { r: 255, g: 255, b: 255, alpha: 0 } })
+    .toBuffer();
+
+  let rotated = await sharp(rotatedBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let rW = rotated.info.width, rH = rotated.info.height;
+  let rPixels = getMoldPixels(rotated.data, rW, rH, 160);
+
+  let minX = rW, maxX = 0, minY = rH, maxY = 0;
+  for (const p of rPixels) {
+    if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+  }
+
+  // MINIMAL PADDING for physical scaling accuracy (PDF uses these dimensions)
+  const PADDING = 2; 
+  const cropL = Math.max(0, minX - PADDING);
+  const cropT = Math.max(0, minY - PADDING);
+  const cropW = Math.min(rW - cropL, (maxX - minX) + PADDING * 2);
+  const cropH = Math.min(rH - cropT, (maxY - minY) + PADDING * 2);
+
+  // Final Background Removal with noise cleanup
+  const finalImage = await sharp(rotatedBuffer)
+    .extract({ left: cropL, top: cropT, width: cropW, height: cropH })
+    .median(3) // Remove salt-and-pepper noise (spots)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const { width, height } = info;
-  const total = width * height;
+  const fW = finalImage.info.width, fH = finalImage.info.height;
+  const fTotal = fW * fH;
+  const fIdx = (x, y) => y * fW + x;
 
-  // Step 1: Flood-fill from all 4 edges to find the TRUE background
-  // This is much more reliable than color thresholds — it finds everything
-  // connected to the image border, regardless of color.
-  const isBackground = new Uint8Array(total); // 0=mold, 1=background
-  const queue = [];
-
-  // Helper to get pixel index
-  const idx = (x, y) => y * width + x;
-
-  // Seed the flood fill from all border pixels
-  for (let x = 0; x < width; x++) {
-    queue.push(idx(x, 0));           // top edge
-    queue.push(idx(x, height - 1));  // bottom edge
-  }
-  for (let y = 0; y < height; y++) {
-    queue.push(idx(0, y));           // left edge
-    queue.push(idx(width - 1, y));   // right edge
-  }
-
-  // Mark border seeds
-  for (const p of queue) isBackground[p] = 1;
-
-  // BFS flood fill — spread to neighbors that are NOT white/light
-  // The mold body is white (R>200, G>200, B>200), so we stop at white pixels
+  const fIsBg = new Uint8Array(fTotal);
+  const fQ = [];
+  for (let x = 0; x < fW; x++) { fQ.push(fIdx(x, 0)); fQ.push(fIdx(x, fH - 1)); }
+  for (let y = 0; y < fH; y++) { fQ.push(fIdx(0, y)); fQ.push(fIdx(fW - 1, y)); }
+  for (const p of fQ) fIsBg[p] = 1;
   let head = 0;
-  while (head < queue.length) {
-    const p = queue[head++];
-    const px = p % width;
-    const py = Math.floor(p / width);
-
-    const neighbors = [
-      px > 0 ? p - 1 : -1,
-      px < width - 1 ? p + 1 : -1,
-      py > 0 ? p - width : -1,
-      py < height - 1 ? p + width : -1,
-    ];
-
+  while (head < fQ.length) {
+    const p = fQ[head++];
+    const px = p % fW, py = Math.floor(p / fW);
+    const neighbors = [px > 0 ? p - 1 : -1, px < fW - 1 ? p + 1 : -1, py > 0 ? p - fW : -1, py < fH - 1 ? p + fW : -1];
     for (const n of neighbors) {
-      if (n < 0 || isBackground[n]) continue;
+      if (n < 0 || fIsBg[n]) continue;
       const s = n * 4;
-      const r = data[s], g = data[s + 1], b = data[s + 2], a = data[s + 3];
-
-      // If pixel is fully transparent, it's background
-      if (a < 30) {
-        isBackground[n] = 1;
-        queue.push(n);
-        continue;
-      }
-
-      // If pixel is NOT white/very light, it's background (non-mold)
-      // White mold pixels act as walls that stop the flood
-      const isWhite = r > 200 && g > 200 && b > 200;
-      if (!isWhite) {
-        isBackground[n] = 1;
-        queue.push(n);
+      // Stricter background detection: anything NOT very white or NOT opaque is background
+      if (finalImage.data[s+3] < 50 || !(finalImage.data[s] > 180 && finalImage.data[s+1] > 180 && finalImage.data[s+2] > 180)) {
+        fIsBg[n] = 1; fQ.push(n);
       }
     }
   }
 
-  // Step 2: Create a binary mold map (1=mold body, 0=not mold)
-  // Mold body = white pixels that are NOT background
-  const isMold = new Uint8Array(total);
-  for (let i = 0; i < total; i++) {
-    const s = i * 4;
-    const r = data[s], g = data[s + 1], b = data[s + 2], a = data[s + 3];
-    const isWhite = r > 180 && g > 180 && b > 180 && a > 30;
-    isMold[i] = (isWhite && !isBackground[i]) ? 1 : 0;
+  // --- PASS 4: Vector-like Smoothing ---
+  // 1. Create a raw 1-channel mask of the mold
+  const moldMaskRaw = Buffer.alloc(fTotal);
+  for (let i = 0; i < fTotal; i++) {
+    const d = i * 4;
+    if ((finalImage.data[d] > 160 && finalImage.data[d+3] > 50) && !fIsBg[i]) {
+      moldMaskRaw[i] = 255;
+    }
   }
 
-  // Step 3: Detect edge pixels of the mold (for red outline)
-  // An edge pixel is a mold pixel that has at least one non-mold neighbor
-  const OUTLINE_WIDTH = 3; // pixels of red border thickness
-  const isEdge = new Uint8Array(total);
+  // 2. Smooth the mask using blur + threshold
+  const smoothedMaskBuf = await sharp(moldMaskRaw, { raw: { width: fW, height: fH, channels: 1 } })
+    .blur(2.5) // This smooths the jagged edges
+    .threshold(140) // This brings back the sharp but smooth edge
+    .raw()
+    .toBuffer();
 
-  // Use distance-based edge: any mold pixel within OUTLINE_WIDTH of a non-mold pixel
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = idx(x, y);
-      if (!isMold[i]) continue;
+  // 3. Create Final Output Buffers based on smoothed mask
+  const maskBuf = Buffer.alloc(fTotal * 4);
+  const prevBuf = Buffer.alloc(fTotal * 4);
+  const OUTLINE = 4;
 
+  for (let i = 0; i < fTotal; i++) {
+    const d = i * 4;
+    const isMold = smoothedMaskBuf[i] > 128;
+
+    if (isMold) {
       let nearEdge = false;
-      for (let dy = -OUTLINE_WIDTH; dy <= OUTLINE_WIDTH && !nearEdge; dy++) {
-        for (let dx = -OUTLINE_WIDTH; dx <= OUTLINE_WIDTH && !nearEdge; dx++) {
+      const x = i % fW, y = Math.floor(i / fW);
+      for (let dy = -OUTLINE; dy <= OUTLINE && !nearEdge; dy++) {
+        for (let dx = -OUTLINE; dx <= OUTLINE && !nearEdge; dx++) {
           const nx = x + dx, ny = y + dy;
-          if (nx < 0 || nx >= width || ny < 0 || ny >= height) { nearEdge = true; continue; }
-          if (!isMold[idx(nx, ny)]) {
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= OUTLINE_WIDTH) nearEdge = true;
+          if (nx < 0 || nx >= fW || ny < 0 || ny >= fH || smoothedMaskBuf[fIdx(nx, ny)] < 128) {
+            if (Math.sqrt(dx*dx + dy*dy) <= OUTLINE) nearEdge = true;
           }
         }
       }
-      if (nearEdge) isEdge[i] = 1;
-    }
-  }
-
-  // Step 4: Generate output buffers
-  const maskBuf = Buffer.alloc(total * 4);
-  const prevBuf = Buffer.alloc(total * 4);
-
-  for (let i = 0; i < total; i++) {
-    const d = i * 4;
-
-    if (isEdge[i]) {
-      // RED OUTLINE — baked into the mask
-      maskBuf[d] = 225; maskBuf[d + 1] = 29; maskBuf[d + 2] = 46; maskBuf[d + 3] = 255;
-      // Also show in preview
-      prevBuf[d] = 225; prevBuf[d + 1] = 29; prevBuf[d + 2] = 46; prevBuf[d + 3] = 255;
-    } else if (isMold[i]) {
-      // MOLD BODY → transparent in mask (design shows through)
-      maskBuf[d] = 0; maskBuf[d + 1] = 0; maskBuf[d + 2] = 0; maskBuf[d + 3] = 0;
-      // PREVIEW: white semi-transparent silhouette for catalog
-      prevBuf[d] = 255; prevBuf[d + 1] = 255; prevBuf[d + 2] = 255; prevBuf[d + 3] = 200;
+      if (nearEdge) {
+        // Smooth Red Outline
+        maskBuf[d] = 225; maskBuf[d+1] = 29; maskBuf[d+2] = 46; maskBuf[d+3] = 255;
+        prevBuf[d] = 225; prevBuf[d+1] = 29; prevBuf[d+2] = 46; prevBuf[d+3] = 255;
+      } else {
+        maskBuf[d] = 0; maskBuf[d+1] = 0; maskBuf[d+2] = 0; maskBuf[d+3] = 0;
+        prevBuf[d] = 255; prevBuf[d+1] = 255; prevBuf[d+2] = 255; prevBuf[d+3] = 255;
+      }
     } else {
-      // BACKGROUND → opaque dark in mask (hides design outside mold)
-      maskBuf[d] = 9; maskBuf[d + 1] = 9; maskBuf[d + 2] = 11; maskBuf[d + 3] = 255;
-      // PREVIEW: transparent
-      prevBuf[d] = 0; prevBuf[d + 1] = 0; prevBuf[d + 2] = 0; prevBuf[d + 3] = 0;
+      maskBuf[d] = 255; maskBuf[d+1] = 255; maskBuf[d+2] = 255; maskBuf[d+3] = 255;
+      prevBuf[d] = 255; prevBuf[d+1] = 255; prevBuf[d+2] = 255; prevBuf[d+3] = 255;
     }
   }
 
@@ -167,9 +216,10 @@ async function processMoldImage(inputPath) {
   const maskFile = `mask_${ts}.png`;
   const prevFile = `preview_${ts}.png`;
 
-  await sharp(maskBuf, { raw: { width, height, channels: 4 } }).png().toFile(path.join(uploadsDir, maskFile));
-  await sharp(prevBuf, { raw: { width, height, channels: 4 } }).png().toFile(path.join(uploadsDir, prevFile));
+  await sharp(maskBuf, { raw: { width: fW, height: fH, channels: 4 } }).png().toFile(path.join(uploadsDir, maskFile));
+  await sharp(prevBuf, { raw: { width: fW, height: fH, channels: 4 } }).png().toFile(path.join(uploadsDir, prevFile));
 
+  console.log(`[DONE] Procesamiento finalizado: ${maskFile}, ${prevFile}`);
   return { maskUrl: `/uploads/${maskFile}`, previewUrl: `/uploads/${prevFile}` };
 }
 
@@ -211,21 +261,28 @@ app.post('/api/modelos', uploadFields, async (req, res) => {
     
     const moldeFile = req.files['molde']?.[0];
     const realImgFile = req.files['imagen_real']?.[0];
+    const svgFile = req.files['svg_molde']?.[0];
 
-    if (!moldeFile) return res.status(400).json({ error: 'Sube la plantilla PNG del molde' });
+    if (!moldeFile && !svgFile) return res.status(400).json({ error: 'Sube al menos un molde (PNG o SVG)' });
 
-    const molde_url = `/uploads/${moldeFile.filename}`;
-    const inputPath = path.join(uploadsDir, moldeFile.filename);
+    let molde_url = '';
+    let maskUrl = '';
+    let previewUrl = '';
 
-    // Process background removal for white mold
-    const { maskUrl, previewUrl } = await processMoldImage(inputPath);
+    if (moldeFile) {
+      molde_url = `/uploads/${moldeFile.filename}`;
+      const inputPath = path.join(uploadsDir, moldeFile.filename);
+      // Process background removal for white mold
+      const processed = await processMoldImage(inputPath);
+      maskUrl = processed.maskUrl;
+      previewUrl = processed.previewUrl;
+    }
 
     let imagen_real_url = req_imagen_real_url || '';
     if (realImgFile) {
       imagen_real_url = `/uploads/${realImgFile.filename}`;
     }
 
-    const svgFile = req.files['svg_molde']?.[0];
     const molde_svg_path = svgFile ? `/uploads/${svgFile.filename}` : '';
 
     const result = db.prepare(
@@ -238,8 +295,8 @@ app.post('/api/modelos', uploadFields, async (req, res) => {
       maskUrl, 
       previewUrl, 
       imagen_real_url, 
-      parseFloat(ancho_impresion), 
-      parseFloat(alto_impresion), 
+      parseFloat(ancho_impresion) || 0, 
+      parseFloat(alto_impresion) || 0, 
       parseInt(stock) || 0,
       molde_svg_path
     );
@@ -415,20 +472,31 @@ app.post('/api/ordenes', async (req, res) => {
     page.drawImage(qrImg, { x: 480, y: 750, width: 75, height: 75 });
     page.drawText('ESCANEAR PARA ESTADO', { x: 478, y: 742, size: 6, color: rgb(0.5, 0.5, 0.5) });
 
-    // 3. DESIGN IMAGE (ROTATED 90°)
+    // 3. DESIGN IMAGE (PROPORTIONAL RENDER)
     const imageBytes = fs.readFileSync(path.join(uploadsDir, imgFile));
-    const rotatedBytes = await sharp(imageBytes).rotate(90).png().toBuffer();
-    const pngImage = await pdfDoc.embedPng(rotatedBytes);
+    const pngImage = await pdfDoc.embedPng(imageBytes);
 
-    // print dimensions in points
-    const printWidth = modelo.alto_impresion * cmToPts;
-    const printHeight = modelo.ancho_impresion * cmToPts;
+    // Target dimensions in points (physical specs)
+    const targetWidth = modelo.ancho_impresion * cmToPts;
+    const targetHeight = modelo.alto_impresion * cmToPts;
 
-    // Place below header
-    const x = (595 - printWidth) / 2;
-    const y = 730 - printHeight; // Starting immediately after header + QR
+    // Force EXACT physical dimensions as specified by the model (7.5 x 14.5 cm, etc.)
+    // We trust the frontend canvas proportions to avoid distortion.
+    let drawWidth = targetWidth;
+    let drawHeight = targetHeight;
 
-    page.drawImage(pngImage, { x, y, width: printWidth, height: printHeight });
+    // Center the design horizontally (visual width is drawHeight) and place below header (visual top is y)
+    const x = (595 - drawHeight) / 2;
+    const y = 730;
+
+    // Draw with 100% proportional accuracy, rotated 90 degrees clockwise
+    page.drawImage(pngImage, { 
+      x, 
+      y, 
+      width: drawWidth, 
+      height: drawHeight,
+      rotate: degrees(-90)
+    });
 
     // Dotted line for separation
     page.drawLine({

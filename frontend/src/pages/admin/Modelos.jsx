@@ -26,7 +26,7 @@ export default function Modelos() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!molde) { alert('Sube un molde PNG (fondo de cualquier color + cobertor blanco)'); return; }
+    if (!molde && !svgMolde) { alert('Sube al menos un molde (PNG o SVG)'); return; }
     setLoading(true);
     const data = new FormData();
     data.append('nombre', formData.nombre);
