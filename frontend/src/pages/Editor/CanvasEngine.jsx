@@ -6,7 +6,23 @@ import { getImageUrl } from '../../config';
 const CanvasEngine = () => {
   const canvasContainerRef = useRef(null);
   const canvasRef = useRef(null);
-  const { modelo, setCanvas, setSelectedObject, setZoom } = useEditorStore();
+  const { modelo, canvas, setCanvas, setSelectedObject, setZoom } = useEditorStore();
+
+  const handleZoomIn = () => {
+    if (!canvas || !canvasContainerRef.current) return;
+    let zoom = canvas.getZoom() * 1.2;
+    if (zoom > 5) zoom = 5;
+    canvas.zoomToPoint({ x: canvasContainerRef.current.clientWidth / 2, y: canvasContainerRef.current.clientHeight / 2 }, zoom);
+    setZoom(zoom);
+  };
+
+  const handleZoomOut = () => {
+    if (!canvas || !canvasContainerRef.current) return;
+    let zoom = canvas.getZoom() / 1.2;
+    if (zoom < 0.2) zoom = 0.2;
+    canvas.zoomToPoint({ x: canvasContainerRef.current.clientWidth / 2, y: canvasContainerRef.current.clientHeight / 2 }, zoom);
+    setZoom(zoom);
+  };
 
   useEffect(() => {
     if (!canvasRef.current || !canvasContainerRef.current || !modelo) return;
@@ -119,16 +135,28 @@ const CanvasEngine = () => {
         );
         
         clipGroup.set({
-          id: 'mold-clip',
+          originX: 'center', originY: 'center',
+          left: 0, top: 0,
+          scaleX: scale, scaleY: scale,
+          fill: 'black',
+          globalCompositeOperation: 'destination-out'
+        });
+        
+        const overlayRect = new fabric.Rect({
+          left: 0, top: 0,
+          originX: 'center', originY: 'center',
+          width: 9999, height: 9999,
+          fill: 'rgba(229, 229, 229, 0.85)'
+        });
+
+        const maskGroup = new fabric.Group([overlayRect, clipGroup], {
+          id: 'mold-overlay',
           originX: 'center', originY: 'center',
           left: centerX, top: centerY,
-          scaleX: scale, scaleY: scale,
-          absolutePositioned: true, // Crucial for clipPath
           selectable: false, evented: false
         });
         
-        // Assign the strict mask
-        canvas.clipPath = clipGroup;
+        canvas.add(maskGroup);
         canvas.renderAll();
 
         // 2. Load again for the Red Outline
@@ -153,13 +181,15 @@ const CanvasEngine = () => {
            // Automatically center the view on the mold
            canvas.zoomToPoint({x: centerX, y: centerY}, 1);
            
-           // GUARANTEE the outline stays on top of everything
-           const forceOutlineToFront = () => {
+           // GUARANTEE the overlay and outline stay on top of everything
+           const forceToFront = () => {
+             const overlay = canvas.getObjects().find(o => o.id === 'mold-overlay');
+             if (overlay) canvas.bringObjectToFront(overlay);
              const outline = canvas.getObjects().find(o => o.id === 'mold-outline');
              if (outline) canvas.bringObjectToFront(outline);
            };
-           canvas.on('object:added', forceOutlineToFront);
-           canvas.on('object:modified', forceOutlineToFront);
+           canvas.on('object:added', forceToFront);
+           canvas.on('object:modified', forceToFront);
            
            canvas.renderAll();
         }).catch(err => console.error("Outline load error", err));
@@ -191,7 +221,17 @@ const CanvasEngine = () => {
         <canvas ref={canvasRef} />
       </div>
 
-      {/* Floating Zoom Indicator */}
+      {/* Floating Zoom Controls for Mobile */}
+      <div className="absolute bottom-6 left-6 flex flex-col gap-2 z-20">
+        <button onClick={handleZoomIn} className="w-10 h-10 bg-white/90 backdrop-blur rounded-full shadow-lg flex items-center justify-center text-xl font-bold text-zinc-700 hover:bg-white transition-colors border border-zinc-200">
+          +
+        </button>
+        <button onClick={handleZoomOut} className="w-10 h-10 bg-white/90 backdrop-blur rounded-full shadow-lg flex items-center justify-center text-xl font-bold text-zinc-700 hover:bg-white transition-colors border border-zinc-200">
+          -
+        </button>
+      </div>
+
+      {/* Floating Pan Indicator */}
       <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-lg text-[10px] font-bold text-zinc-600 z-20 pointer-events-none border border-zinc-200">
         Alt + Drag para Mover
       </div>

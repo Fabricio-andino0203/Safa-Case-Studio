@@ -260,7 +260,7 @@ export const PanelContainer = () => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -300, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="absolute left-16 sm:left-20 top-0 bottom-0 w-80 bg-white/95 backdrop-blur-xl border-r border-zinc-200 shadow-2xl p-6 z-30"
+          className="absolute left-16 sm:left-20 top-0 bottom-0 w-[calc(100vw-4rem)] sm:w-80 max-w-sm bg-white/95 backdrop-blur-xl border-r border-zinc-200 shadow-2xl p-4 sm:p-6 z-30"
         >
           <div className="flex justify-between items-center mb-6 border-b border-zinc-100 pb-4">
             <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400">
