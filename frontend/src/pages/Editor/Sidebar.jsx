@@ -15,7 +15,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-16 sm:w-20 bg-white border-r border-zinc-200 flex flex-col py-6 items-center gap-6 z-40 relative shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+    <aside className="w-full h-16 sm:w-20 sm:h-full bg-white border-t sm:border-t-0 sm:border-r border-zinc-200 flex flex-row sm:flex-col py-2 sm:py-6 items-center justify-around sm:justify-start gap-2 sm:gap-6 z-40 relative shadow-[0_-4px_24px_rgba(0,0,0,0.02)] sm:shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -23,12 +23,12 @@ const Sidebar = () => {
           <button 
             key={tab.id}
             onClick={() => setActiveTab(tab.id)} 
-            className={`flex flex-col items-center gap-1.5 w-full transition-all group ${isActive ? 'text-brand-red' : 'text-zinc-400 hover:text-zinc-900'}`}
+            className={`flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:w-full transition-all group ${isActive ? 'text-brand-red' : 'text-zinc-400 hover:text-zinc-900'}`}
           >
-            <div className={`p-3 rounded-2xl transition-all duration-300 ${isActive ? 'bg-red-50 shadow-sm' : 'group-hover:bg-zinc-50'}`}>
+            <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 ${isActive ? 'bg-red-50 shadow-sm' : 'group-hover:bg-zinc-50'}`}>
               <Icon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" />
             </div>
-            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
+            <span className="text-[7px] sm:text-[9px] font-black uppercase tracking-widest">{tab.label}</span>
           </button>
         );
       })}

@@ -32,10 +32,10 @@ const EditorLayout = () => {
   return (
     <div className="h-screen w-full bg-white flex flex-col overflow-hidden font-sans text-zinc-900 selection:bg-brand-red/20">
       <Toolbar />
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex flex-col-reverse sm:flex-row overflow-hidden relative">
         <Sidebar />
         <PanelContainer />
-        <main className="flex-1 relative flex flex-col">
+        <main className="flex-1 relative flex flex-col overflow-hidden">
           <CanvasEngine />
           <FloatingContextMenu />
         </main>
