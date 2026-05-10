@@ -134,29 +134,36 @@ const CanvasEngine = () => {
           baseHeight / (clipGroup.height || 1)
         );
         
-        clipGroup.set({
-          originX: 'center', originY: 'center',
-          left: 0, top: 0,
-          scaleX: scale, scaleY: scale,
-          fill: 'black',
-          globalCompositeOperation: 'destination-out'
-        });
-        
+        // Use a single Overlay Rectangle with an INVERTED ClipPath
+        // This creates a "hole" where the mold is.
         const overlayRect = new fabric.Rect({
-          left: 0, top: 0,
-          originX: 'center', originY: 'center',
-          width: 9999, height: 9999,
-          fill: 'rgba(229, 229, 229, 0.85)'
+          id: 'mold-overlay',
+          left: centerX,
+          top: centerY,
+          originX: 'center',
+          originY: 'center',
+          width: 4000, // Large enough to cover zoom-outs
+          height: 4000,
+          fill: 'rgba(229, 229, 229, 0.85)',
+          selectable: false,
+          evented: false,
+          pointerEvents: 'none'
         });
 
-        const maskGroup = new fabric.Group([overlayRect, clipGroup], {
-          id: 'mold-overlay',
-          originX: 'center', originY: 'center',
-          left: centerX, top: centerY,
-          selectable: false, evented: false
+        clipGroup.set({
+          originX: 'center',
+          originY: 'center',
+          left: centerX,
+          top: centerY,
+          scaleX: scale,
+          scaleY: scale,
+          absolutePositioned: true,
+          inverted: true // Draw everywhere EXCEPT the mold
         });
+
+        overlayRect.clipPath = clipGroup;
         
-        canvas.add(maskGroup);
+        canvas.add(overlayRect);
         canvas.renderAll();
 
         // 2. Load again for the Red Outline
